@@ -53,9 +53,8 @@ async function reportStats(): Promise<void> {
     }
     await songloft.storage.set(LAST_VER, currentVer);
     // 用免费计数器 API（无需 token，GET 即计数）
-    const ns = 'songloft-plugin-tag';
-    const key = isNew ? 'installs' : 'upgrades';
-    await fetch(`https://api.countapi.xyz/hit/${ns}/${key}`);
+    const key = isNew ? 'songloft-tag-installs' : 'songloft-tag-upgrades';
+    await fetch(`https://countapi.mileshilliard.com/api/v1/hit/${key}`);
   } catch { /* 统计失败不影响功能 */ }
 }
 
