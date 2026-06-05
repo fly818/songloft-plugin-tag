@@ -5,7 +5,7 @@
   "author": "Songloft Team",
   "entryPath": "tag",
   "main": "main.js",
-  "minHostVersion": "1.0.0",
+  "minHostVersion": "2.5.0",
   "permissions": [
     "storage",
     "songs.read",
@@ -13,4 +13,5 @@
   ],
   "entryHash": "2e0f6ea0100ab467e0f620c9b136ac9c341d389e3e752912023048000833bc6a",
   "zipHash": "d37ec0a5186a2d2988b0f27710933997eba489c646bf4010f315b85e8476aa9f"
+  "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/manifest.json",
 }
