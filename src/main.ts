@@ -20,6 +20,22 @@ const batchTasks = new Map<string, {
   status: 'running' | 'done';
 }>();
 
+// 已成功刮削的歌曲 ID 集合
+async function getScrapedDone(): Promise<Set<number>> {
+  try {
+    const raw = await songloft.storage.get('scraped_done');
+    const arr: number[] = raw ? JSON.parse(raw) : [];
+    return new Set(arr);
+  } catch { return new Set(); }
+}
+async function markScrapedDone(songId: number): Promise<void> {
+  try {
+    const done = await getScrapedDone();
+    done.add(songId);
+    await songloft.storage.set('scraped_done', JSON.stringify([...done]));
+  } catch { /* ok */ }
+}
+
 /** 安全解析请求体（Uint8Array/string → JSON） */
 function parseBody(req: any): any {
   const raw = req.body;
@@ -90,9 +106,15 @@ router.post('/scrape/batch', async (req) => {
   const ids: number[] = [...new Set(body.ids || [])];
   if (!ids.length) return jsonResponse({ error: '请提供歌曲 ID 列表' }, 400);
 
+  // 过滤已成功刮削的
+  const doneIds = await getScrapedDone();
+  const skipIds = ids.filter(id => doneIds.has(id));
+  const newIds = ids.filter(id => !doneIds.has(id));
+  songloft.log.info(`[batch] 总${ids.length}首, 已刮过${skipIds.length}首跳过, 待刮${newIds.length}首`);
+
   const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const task = {
-    ids, current: 0, total: ids.length,
+    ids: newIds, current: 0, total: newIds.length,
     results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
     failed: 0, failedIds: [] as number[], status: 'running' as const,
   };
@@ -114,6 +136,7 @@ router.post('/scrape/batch', async (req) => {
           task.results.push(result);
           if (ws === 'written' || ws === 'skipped') {
             task.success++;
+            await markScrapedDone(songId);
           } else {
             task.failed++;
             task.failedIds.push(songId);
