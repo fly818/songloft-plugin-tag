@@ -1,0 +1,8 @@
+node_modules/
+dist/
+package-lock.json
+*.jsc
+_build.js
+_install.js
+_repack.js
+_fullbuild.js
