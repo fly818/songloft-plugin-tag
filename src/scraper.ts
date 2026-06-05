@@ -256,11 +256,10 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       try {
         const coverResp = await fetch(result.cover_url);
         if (coverResp.ok) {
-          const buf = await coverResp.arrayBuffer();
-          const bytes = new Uint8Array(buf);
+          const text = await coverResp.text();
           let binary = '';
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
+          for (let i = 0; i < text.length; i++) {
+            binary += String.fromCharCode(text.charCodeAt(i) & 0xff);
           }
           const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
           const len = binary.length;
