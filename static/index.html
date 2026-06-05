@@ -5,7 +5,7 @@
 :root{--p:#6750A4;--pc:#EADDFF;--poc:#21005D;--s:#FEF7FF;--os:#1C1B1F;--sv:#E7E0EC;--osv:#49454F;--ol:#79747E;--er:#B3261E;--gr:#2E7D32}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-size:14px;line-height:1.5}
-.hdr{background:var(--p);color:#fff;padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z:99;flex-wrap:wrap}
+.hdr{background:var(--p);color:#fff;padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:99;flex-wrap:wrap}
 .hdr h1{font-size:16px;font-weight:500}
 .tabs{display:flex;gap:2px;background:rgba(255,255,255,0.15);border-radius:10px;padding:2px}
 .tabs button{padding:6px 14px;border:none;background:none;color:rgba(255,255,255,0.7);font-size:12px;border-radius:8px;cursor:pointer}
@@ -23,7 +23,7 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 .srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:12px;cursor:pointer}
 .srow:active{background:rgba(103,80,164,0.08)}
 .srow.sel{background:rgba(103,80,164,0.12)}
-.srow input[type=checkbox]{accent-color:var(--p);transform:scale(1.2);flex-shrink:0;margin:0;width:16px;height:16px}
+.srow input[type=checkbox]{accent-color:var(--p);flex-shrink:0;margin:0;width:18px;height:18px}
 .sinfo{flex:1;min-width:0}
 .sinfo .t{font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sinfo .u{font-size:12px;color:var(--osv)}
