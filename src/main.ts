@@ -346,8 +346,15 @@ router.post('/scrape/manual/:id', async (req, params) => {
 // ============================================================
 async function onInit(): Promise<void> {
   songloft.log.info('[tag] 标签刮削插件已启动');
-  // 清理旧版残留（bin/fpcalc 在 overlayfs 上会导致 AcoustID 失败）
-  try { await songloft.command.deleteBin('fpcalc'); } catch { /* ok */ }
+  // 清理旧版残留（bin/ 下文件在 overlayfs 上会导致 AcoustID 失败）
+  try {
+    const files = await songloft.command.listBin();
+    if (Array.isArray(files)) {
+      for (const f of files) {
+        try { await songloft.command.deleteBin(f); } catch { /* ok */ }
+      }
+    }
+  } catch { /* ok */ }
   // 确保默认配置存在
   const existing = await loadConfig();
   if (!existing || Object.keys(existing).length === 0) {
