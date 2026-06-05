@@ -1,6 +1,5 @@
 node_modules/
 dist/
-package-lock.json
 *.jsc
 _build.js
 _install.js
