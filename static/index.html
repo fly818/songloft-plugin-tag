@@ -3,38 +3,38 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>标签刮削</title>
 <style>
 .mi svg{width:20px;height:20px;fill:currentColor;vertical-align:middle}
-:root{--p:#6750A4;--pc:#EADDFF;--poc:#21005D;--s:#FEF7FF;--os:#1C1B1F;--sv:#E7E0EC;--osv:#49454F;--ol:#79747E;--er:#B3261E;--gr:#2E7D32}
+:root{--p:#D0BCFF;--pc:#4F378B;--poc:#E8DEF8;--s:#141218;--os:#E6E1E5;--sv:#49454F;--osv:#CAC4D0;--ol:#938F99;--er:#F2B8B5;--gr:#7FDD8F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-size:14px;line-height:1.5}
-.hdr{background:var(--p);color:#fff;padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:99;flex-wrap:wrap}
+.hdr{background:#1D192B;color:var(--p);padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:99;flex-wrap:wrap}
 .hdr h1{font-size:16px;font-weight:500}
-.tabs{display:flex;gap:2px;background:rgba(255,255,255,0.15);border-radius:10px;padding:2px}
-.tabs button{padding:6px 14px;border:none;background:none;color:rgba(255,255,255,0.7);font-size:12px;border-radius:8px;cursor:pointer}
-.tabs button.on{background:rgba(255,255,255,0.25);color:#fff;font-weight:500}
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,0.08);border-radius:10px;padding:2px}
+.tabs button{padding:6px 14px;border:none;background:none;color:rgba(255,255,255,0.5);font-size:12px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:rgba(208,188,255,0.2);color:var(--p);font-weight:500}
 .ctn{max-width:900px;margin:0 auto;padding:12px}
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.12)}
+.card{background:#1D1B20;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
 .card h3{font-size:13px;color:var(--osv);letter-spacing:.5px;margin-bottom:12px;font-weight:500}
 .srch{display:flex;gap:8px;margin-bottom:12px}
-.srch input{flex:1;padding:10px 14px;border-radius:28px;border:1px solid var(--ol);font-size:14px;outline:none}
+.srch input{flex:1;padding:10px 14px;border-radius:28px;border:1px solid var(--ol);font-size:14px;outline:none;background:#2B2930;color:var(--os)}
 .srch input:focus{border-color:var(--p)}
 .tbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
-.tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--ol);background:#fff;font-size:12px;cursor:pointer;color:var(--p)}
+.tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--ol);background:#2B2930;font-size:12px;cursor:pointer;color:var(--os)}
 .tbar button:active{background:var(--pc)}
 .slist{max-height:50vh;overflow-y:auto}
-.srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:12px;cursor:pointer}
+.srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:12px;cursor:pointer;color:var(--os)}
 .srow:active{background:rgba(103,80,164,0.08)}
-.srow.sel{background:rgba(103,80,164,0.12)}
+.srow.sel{background:rgba(208,188,255,0.12)}
 .srow input[type=checkbox]{accent-color:var(--p);flex-shrink:0;margin:0;width:18px;height:18px}
 .sinfo{flex:1;min-width:0}
 .sinfo .t{font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sinfo .u{font-size:12px;color:var(--osv)}
 .btn{padding:10px 20px;border-radius:20px;border:none;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn:active{opacity:.8}
-.btn-p{background:var(--p);color:#fff}
-.btn-stop{background:#B3261E;color:#fff;border:none}
-.btn-stop:disabled{background:var(--sv);color:var(--osv)}
+.btn-p{background:var(--p);color:#1D192B}
+.btn-stop{background:#F2B8B5;color:#601410;border:none}
+.btn-stop:disabled{background:#3E3A44;color:var(--osv)}
 .btn-s{background:var(--pc);color:var(--poc)}
-.btn-e{background:var(--er);color:#fff}
+.btn-e{background:var(--er);color:#601410}
 .btn-sm{padding:6px 14px;font-size:12px;border-radius:14px}
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .schip{padding:10px;border-radius:12px;border:2px solid var(--ol);cursor:pointer;text-align:center;font-size:13px;position:relative}
@@ -44,23 +44,23 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 .schip .st.on{background:var(--gr)}.schip .st.off{background:var(--sv)}
 .schip .fpr{position:absolute;top:6px;right:8px;font-size:10px;color:var(--osv)}
 .cfg{margin-top:8px}.cfg label{font-size:11px;color:var(--osv);display:block}
-.cfg input{width:50%;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);font-size:12px;margin-top:2px}
+.cfg input{width:50%;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);font-size:12px;margin-top:2px;background:#2B2930;color:var(--os)}
 .cfg .eg{font-size:10px;color:var(--osv);margin-left:8px;user-select:all;word-break:break-all;display:inline-block;vertical-align:middle;max-width:45%}
 .cfg .err{font-size:10px;color:var(--er);margin-left:8px;display:none}
-.log{max-height:150px;overflow-y:auto;background:#F5F5F5;border-radius:12px;padding:8px 12px;font-size:11px;font-family:monospace}
+.log{max-height:150px;overflow-y:auto;background:#2B2930;border-radius:12px;padding:8px 12px;font-size:11px;font-family:monospace;color:var(--os)}
 .log .e{color:var(--er)}
 .pbar{width:100%;height:4px;background:var(--sv);border-radius:2px;margin:8px 0;overflow:hidden}
 .pfill{height:100%;background:var(--p);border-radius:2px;transition:width .3s}
 .ptxt{font-size:12px;color:var(--osv);text-align:center}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000}
-.mbody{background:#fff;border-radius:20px;padding:20px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:1000}
+.mbody{background:#1D1B20;border-radius:20px;padding:20px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;color:var(--os)}
 .mbody h3{font-size:16px;margin-bottom:12px}
 .fld{margin-bottom:10px}.fld label{font-size:12px;color:var(--osv);display:block}
-.fld input,.fld textarea{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--ol);font-size:14px}
+.fld input,.fld textarea{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--ol);font-size:14px;background:#2B2930;color:var(--os)}
 .fld textarea{min-height:60px;resize:vertical}
 .erow{display:flex;align-items:center;padding:8px 0;gap:8px;border-bottom:1px solid var(--sv)}
-.erow .sinfo{flex:1}.erow input{width:60px;padding:4px 8px;border-radius:8px;border:1px solid var(--ol);font-size:12px}
-.toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:999}
+.erow .sinfo{flex:1}.erow input{width:60px;padding:4px 8px;border-radius:8px;border:1px solid var(--ol);font-size:12px;background:#2B2930;color:var(--os)}
+.toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--pc);color:var(--poc);padding:8px 20px;border-radius:20px;font-size:13px;z-index:999}
 .tab-content{display:none}.tab-content.on{display:block}
 @media(max-width:600px){.sgrid{grid-template-columns:1fr}}
 </style></head><body>
@@ -88,7 +88,7 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 <div class="schip" id="card_qqmusic" onclick="toggleSrc('qqmusic')"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
 <div class="schip" id="card_kugou" onclick="toggleSrc('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div></div>
 <div id="cfgPanel">
-<div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><div style="font-size:10px;color:var(--osv);margin-top:2px">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--p)">acoustid.org/webservice</a> 免费获取</div></div>
+<div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 acoustid.org/webservice 免费获取</span></div>
 <div class="cfg" id="cfg_netease"><label>网易云 URL</label><input id="nu" placeholder="输入 URL"><span class="eg">https://music.163.com/api/cloudsearch/pc</span><span class="err" id="err_nu">请填写 URL</span></div>
 <div class="cfg" id="cfg_qqmusic"><label>QQ音乐 URL</label><input id="qu" placeholder="输入 URL"><span class="eg">https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span><span class="err" id="err_qu">请填写 URL</span></div>
 <div class="cfg" id="cfg_kugou"><label>酷狗 URL</label><input id="ku" placeholder="输入 URL"><span class="eg">https://songsearch.kugou.com/song_search_v2</span><span class="err" id="err_ku">请填写 URL</span></div>
