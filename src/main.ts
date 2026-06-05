@@ -225,6 +225,35 @@ router.get('/song/:id', async (_req, params) => {
 });
 
 // ============================================================
+// 标签写入代理（避免前端跨域）
+// ============================================================
+router.put('/tags/:id', async (req, params) => {
+  try {
+    const id = parseInt(params?.id || '0', 10);
+    if (!id) return jsonResponse({ error: '无效 ID' }, 400);
+    const body = parseBody(req);
+    const token = await songloft.plugin.getToken();
+    const host = await songloft.plugin.getHostUrl();
+    const resp = await fetch(`${host}/api/v1/songs/${id}/tags`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return jsonResponse({ error: errText.substring(0, 200) }, resp.status);
+    }
+    const data = await resp.json();
+    return jsonResponse(data);
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
+});
+
+// ============================================================
 // 歌曲列表（前端用）
 // ============================================================
 router.get('/songs', async (req) => {
