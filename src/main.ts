@@ -36,6 +36,29 @@ async function markScrapedDone(songId: number): Promise<void> {
   } catch { /* ok */ }
 }
 
+// 埋点统计（首次安装/升级记数）
+async function reportStats(): Promise<void> {
+  try {
+    const DEV_ID = 'plugin_stats_device_id';
+    const LAST_VER = 'plugin_stats_last_ver';
+    let deviceId = await songloft.storage.get(DEV_ID);
+    const lastVer = await songloft.storage.get(LAST_VER);
+    const currentVer = '1.0.3';
+    const isNew = !deviceId;
+    const isUpgrade = lastVer && lastVer !== currentVer;
+    if (!isNew && !isUpgrade) return;
+    if (isNew) {
+      deviceId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      await songloft.storage.set(DEV_ID, deviceId);
+    }
+    await songloft.storage.set(LAST_VER, currentVer);
+    // 用免费计数器 API（无需 token，GET 即计数）
+    const ns = 'songloft-plugin-tag';
+    const key = isNew ? 'installs' : 'upgrades';
+    await fetch(`https://api.countapi.xyz/hit/${ns}/${key}`);
+  } catch { /* 统计失败不影响功能 */ }
+}
+
 /** 安全解析请求体（Uint8Array/string → JSON） */
 function parseBody(req: any): any {
   const raw = req.body;
@@ -411,6 +434,8 @@ async function onInit(): Promise<void> {
   if (!existing || Object.keys(existing).length === 0) {
     await saveConfig(DEFAULT_CONFIG);
   }
+  // 埋点统计（异步，不阻塞启动）
+  reportStats();
 }
 
 async function onDeinit(): Promise<void> {

@@ -47,7 +47,7 @@ docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc
 
 国内音源用于拉取封面和歌词，同时作为声纹匹配的补充。
 
-1. 在**刮削源**区域，填入对应的 **API URL**（已预填默认值，可直接使用）
+1. 在**刮削源**区域，填入对应的 **API URL**
 2. 点 **保存配置**
 3. 点击音源卡片启用（圆点变绿）
 4. 未填 URL 时无法启用，保存空 URL 会自动关闭音源
