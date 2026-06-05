@@ -39,8 +39,9 @@ docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc
 然后在插件页面点 **安装 fpcalc**
    - **其他系统：** 直接点插件页面的 **安装 fpcalc**
 2. 安装成功后，AcoustID 卡片右上角显示 "已安装 fpcalc"
-3. 点击 AcoustID 卡片启用（圆点变绿）
-4. AcoustID Key 已内置，无需额外申请
+3. 在 AcoustID Key 输入框中填入你的 Key（去 [acoustid.org/webservice](https://acoustid.org/webservice) 免费注册获取永久 Key）
+4. 点击 AcoustID 卡片启用（圆点变绿）
+5. 插件内置的临时 Key 仅供试用，可能随时失效，建议注册永久 Key
 
 ## 开启国内音源
 
