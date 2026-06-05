@@ -21,7 +21,7 @@ export interface ScraperConfig {
 
 export const DEFAULT_CONFIG: ScraperConfig = {
   enable_acoustid: true,
-  acoustid_api_key: 'I5CvINoX9AI',
+  acoustid_api_key: '',
   enable_netease: false,
   netease_api_url: '',
   enable_qqmusic: false,

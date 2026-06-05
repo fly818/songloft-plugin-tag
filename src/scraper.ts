@@ -161,7 +161,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
             best.lyrics = enrich.lyrics;
           }
 
-          return buildResult(songId, best, candidate);
+          return buildResult(songId, best, candidate, {});
         }
       }
     } else {
@@ -284,7 +284,7 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       album: result.album || '',
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
-      cover_data: coverData,
+      ...(coverData ? { cover_data: coverData } : {}),
     };
 
     const resp = await fetch(`${hostUrl}/api/v1/songs/${songId}/tags`, {

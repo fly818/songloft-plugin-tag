@@ -123,7 +123,7 @@ router.post('/scrape/batch', async (req) => {
   // 异步执行
   setTimeout(async () => {
     const cfg = await loadConfig();
-    for (const songId of ids) {
+    for (const songId of task.ids) {
       try {
         const result = await doScrape(songId, cfg);
         if (!result) {
@@ -151,7 +151,7 @@ router.post('/scrape/batch', async (req) => {
     task.status = 'done';
   }, 100);
 
-  return jsonResponse({ taskId, status: 'started', total: ids.length });
+  return jsonResponse({ taskId, status: 'started', total: newIds.length, skipped: skipIds.length });
 });
 
 // 批量进度查询
@@ -162,6 +162,9 @@ router.get('/scrape/batch/progress', async (req) => {
   const task = batchTasks.get(taskId);
   if (!task) return jsonResponse({ error: '任务不存在' }, 404);
   const latest = task.results[task.results.length - 1];
+  if (task.status === 'done') {
+    setTimeout(() => batchTasks.delete(taskId), 60000);
+  }
   return jsonResponse({
     status: task.status,
     current: task.current,
@@ -175,10 +178,6 @@ router.get('/scrape/batch/progress', async (req) => {
     skippedIds: task.status === 'done' ? task.skippedIds : undefined,
     failedIds: task.status === 'done' ? task.failedIds : undefined,
   });
-  // 完成后保留 60s 再清理
-  if (task.status === 'done') {
-    setTimeout(() => batchTasks.delete(taskId), 60000);
-  }
 });
 
 // 单曲刮削

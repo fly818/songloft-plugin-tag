@@ -75,7 +75,9 @@ function matchingBlocks(a: string, b: string): MatchBlock[] {
     const lastBEnd = last.bStart + last.length;
     if (block.aStart <= lastAEnd && block.bStart <= lastBEnd) {
       // 重叠，扩展
-      last.length = Math.max(lastAEnd, block.aStart + block.length) - last.aStart;
+      const newLen = Math.max(lastAEnd, block.aStart + block.length) - last.aStart;
+      const maxLen = Math.max(a.length - last.aStart, b.length - last.bStart);
+      last.length = Math.min(newLen, maxLen);
     } else {
       merged.push(block);
     }
