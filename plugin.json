@@ -1,6 +1,6 @@
 {
   "name": "标签刮削",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "智能刮削音乐标签：支持 AcoustID 声纹匹配 + 多源文本搜索，自动修正歌曲标题、艺术家、专辑，下载封面并写入音频文件",
   "author": "Laihya",
   "entryPath": "tag",
