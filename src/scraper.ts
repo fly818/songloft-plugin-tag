@@ -256,12 +256,12 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       try {
         const coverResp = await fetch(result.cover_url);
         if (coverResp.ok) {
-          const text = await coverResp.text();
+          const buf = await coverResp.arrayBuffer();
+          const bytes = new Uint8Array(buf);
           let binary = '';
-          for (let i = 0; i < text.length; i++) {
-            binary += String.fromCharCode(text.charCodeAt(i) & 0xff);
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
           }
-          // 手写 base64
           const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
           const len = binary.length;
           for (let i = 0; i < len; i += 3) {
