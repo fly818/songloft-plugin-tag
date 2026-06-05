@@ -32,7 +32,11 @@
 声纹匹配通过音频指纹精确识别歌曲，大幅提高刮削准确率。
 
 1. **安装 fpcalc**
-   - **Docker：** 进入容器执行 `apk add chromaprint`，然后点插件页面的 **安装 fpcalc**
+   - **Docker：** 一行命令安装并复制到系统 PATH：
+```sh
+docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc /usr/local/bin/fpcalc"
+```
+然后在插件页面点 **安装 fpcalc**
    - **其他系统：** 直接点插件页面的 **安装 fpcalc**
 2. 安装成功后，AcoustID 卡片右上角显示 "已安装 fpcalc"
 3. 点击 AcoustID 卡片启用（圆点变绿）
