@@ -5,7 +5,7 @@
 // ============================================================
 
 /** Chromaprint fpcalc 各平台下载源 */
-const FPCALC_VERSION = '1.5.1';
+const FPCALC_VERSION = '1.6.0';
 const FPCALC_BASE = `https://github.com/acoustid/chromaprint/releases/download/v${FPCALC_VERSION}`;
 
 interface PlatformInfo {
@@ -52,10 +52,13 @@ function getDownloadUrl(info: PlatformInfo): string {
  * 检查 fpcalc 是否已安装可用
  */
 export async function isFpcalcAvailable(): Promise<boolean> {
+  // 先尝试运行（bin/或系统PATH），exec 失败再查 exists
   try {
-    // command.exists 只查插件 bin/，试运行更可靠（覆盖系统PATH）
     const r = await songloft.command.exec('fpcalc', ['-version'], { timeout: 5000 });
-    return r.exitCode === 0;
+    if (r.exitCode === 0) return true;
+  } catch { /* ignore */ }
+  try {
+    return await songloft.command.exists('fpcalc');
   } catch {
     return false;
   }
@@ -67,27 +70,22 @@ export async function isFpcalcAvailable(): Promise<boolean> {
  */
 export async function installFpcalc(): Promise<{ success: boolean; error?: string }> {
   try {
-    // 1. 已安装
-    if (await songloft.command.exists('fpcalc')) {
+    // 1. 检测可用（bin/ 或系统 PATH）
+    const ok = await isFpcalcAvailable();
+    if (ok) {
       songloft.log.info('[fpcalc] 已可用，无需安装');
       return { success: true };
     }
-    // 2. 尝试 chmod（bin/ 已有但没权限）
-    try { await songloft.command.exec('chmod', ['+x', 'fpcalc']); } catch { /* ok */ }
-    if (await songloft.command.exists('fpcalc')) {
-      songloft.log.info('[fpcalc] 本地安装完成');
-      return { success: true };
-    }
-    // 3. Alpine: apk add chromaprint
+    // 2. Alpine: apk add chromaprint
     try {
       await songloft.command.exec('apk', ['add', '--no-cache', 'chromaprint']);
-      if (await songloft.command.exists('fpcalc')) {
+      if (await isFpcalcAvailable()) {
         songloft.log.info('[fpcalc] apk 安装完成');
         return { success: true };
       }
     } catch { /* 非 Alpine 环境 */ }
 
-    // 4. 网络下载（Debian/Ubuntu/macOS/Windows）
+    // 3. 网络下载（其他平台）
     const info = detectPlatform();
     const url = getDownloadUrl(info);
     songloft.log.info(`[fpcalc] 下载: ${url}`);

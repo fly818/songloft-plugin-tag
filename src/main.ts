@@ -1,10 +1,24 @@
 /// <reference types="@songloft/plugin-sdk" />
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
-import { scrapeSong, scrapeBatch, previewScrape, type ScrapeResult } from './scraper';
+import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, type ScrapeResult } from './scraper';
 import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './sources';
 import { isFpcalcAvailable, installFpcalc, getPlatformInfo } from './fpcalc';
 
 const router = createRouter();
+
+// 异步批量任务状态
+const batchTasks = new Map<string, {
+  ids: number[];
+  current: number;
+  total: number;
+  results: any[];
+  success: number;
+  skipped: number;
+  skippedIds: number[];
+  failed: number;
+  failedIds: number[];
+  status: 'running' | 'done';
+}>();
 
 /** 安全解析请求体（Uint8Array/string → JSON） */
 function parseBody(req: any): any {
@@ -70,18 +84,77 @@ router.post('/fpcalc/install', async (_req) => {
 // 刮削
 // ============================================================
 
-// 批量刮削（必须在 /scrape/:id 之前，否则 "batch" 会被 :id 捕获）
+// 批量刮削（异步+轮询，解决超时）
 router.post('/scrape/batch', async (req) => {
-  try {
-    const body = parseBody(req);
-    const ids: number[] = body.ids || [];
-    if (!ids.length) return jsonResponse({ error: '请提供歌曲 ID 列表' }, 400);
+  const body = parseBody(req);
+  const ids: number[] = [...new Set(body.ids || [])];
+  if (!ids.length) return jsonResponse({ error: '请提供歌曲 ID 列表' }, 400);
 
-    songloft.log.info(`[api] 批量刮削: ${ids.length} 首歌`);
-    const result = await scrapeBatch(ids);
-    return jsonResponse(result);
-  } catch (e: any) {
-    return jsonResponse({ error: e.message || String(e) }, 400);
+  const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const task = {
+    ids, current: 0, total: ids.length,
+    results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
+    failed: 0, failedIds: [] as number[], status: 'running' as const,
+  };
+  batchTasks.set(taskId, task);
+
+  // 异步执行
+  setTimeout(async () => {
+    const cfg = await loadConfig();
+    for (const songId of ids) {
+      try {
+        const result = await doScrape(songId, cfg);
+        if (!result) {
+          songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
+          task.skipped++;
+          task.skippedIds.push(songId);
+        } else {
+          const ws = await writeTags(songId, result);
+          result.fileWriteStatus = ws;
+          task.results.push(result);
+          if (ws === 'written' || ws === 'skipped') {
+            task.success++;
+          } else {
+            task.failed++;
+            task.failedIds.push(songId);
+          }
+        }
+      } catch {
+        task.failed++;
+        task.failedIds.push(songId);
+      }
+      task.current++;
+    }
+    task.status = 'done';
+  }, 100);
+
+  return jsonResponse({ taskId, status: 'started', total: ids.length });
+});
+
+// 批量进度查询
+router.get('/scrape/batch/progress', async (req) => {
+  const q = (req as any).query || '';
+  const taskId = q.match(/taskId=([^&]+)/)?.[1];
+  if (!taskId) return jsonResponse({ error: '缺少 taskId' }, 400);
+  const task = batchTasks.get(taskId);
+  if (!task) return jsonResponse({ error: '任务不存在' }, 404);
+  const latest = task.results[task.results.length - 1];
+  return jsonResponse({
+    status: task.status,
+    current: task.current,
+    total: task.total,
+    success: task.success,
+    skipped: task.skipped,
+    failed: task.failed,
+    lastLog: latest ? `${latest.artist} - ${latest.title} | ${latest.source} | ${latest.fileWriteStatus}` : null,
+    loggedCount: task.results.length + task.skippedIds.length + task.failedIds.length,
+    results: task.status === 'done' ? task.results : undefined,
+    skippedIds: task.status === 'done' ? task.skippedIds : undefined,
+    failedIds: task.status === 'done' ? task.failedIds : undefined,
+  });
+  // 完成后保留 60s 再清理
+  if (task.status === 'done') {
+    setTimeout(() => batchTasks.delete(taskId), 60000);
   }
 });
 

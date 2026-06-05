@@ -109,7 +109,7 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
 // 内部实现
 // ============================================================
 
-async function doScrape(songId: number, cfg: ScraperConfig): Promise<ScrapeResult | null> {
+export async function doScrape(songId: number, cfg: ScraperConfig): Promise<ScrapeResult | null> {
   // 1. 获取歌曲信息
   const song = await songloft.songs.getById(songId);
   if (!song) {
@@ -133,7 +133,11 @@ async function doScrape(songId: number, cfg: ScraperConfig): Promise<ScrapeResul
   songloft.log.info(`[scraper] 开始刮削: ${keyword} (songId=${songId})`);
 
   // 2. 声纹优先
-  if (cfg.enable_acoustid && filePath) {
+  if (!cfg.enable_acoustid) {
+    songloft.log.info(`[scraper] AcoustID 未启用 (cfg.enable_acoustid=${cfg.enable_acoustid})`);
+  } else if (!filePath) {
+    songloft.log.info(`[scraper] AcoustID 跳过: filePath 为空`);
+  } else {
     const fpAvailable = await isFpcalcAvailable();
     if (fpAvailable) {
       const acoustidResults = await searchAcoustid(filePath, cfg.acoustid_api_key);
@@ -241,19 +245,34 @@ function buildResult(
 /**
  * 调用宿主 API 将标签写入歌曲
  */
-async function writeTags(songId: number, result: ScrapeResult): Promise<string> {
+export async function writeTags(songId: number, result: ScrapeResult): Promise<string> {
   try {
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
 
-    // 下载封面并转 base64
+    // 下载封面并转 base64（纯字符串，不依赖 arrayBuffer）
     let coverData = '';
     if (result.cover_url) {
       try {
         const coverResp = await fetch(result.cover_url);
         if (coverResp.ok) {
-          const blob = await coverResp.arrayBuffer();
-          coverData = arrayBufferToBase64(blob);
+          const text = await coverResp.text();
+          let binary = '';
+          for (let i = 0; i < text.length; i++) {
+            binary += String.fromCharCode(text.charCodeAt(i) & 0xff);
+          }
+          // 手写 base64
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+          const len = binary.length;
+          for (let i = 0; i < len; i += 3) {
+            const b1 = binary.charCodeAt(i);
+            const b2 = i + 1 < len ? binary.charCodeAt(i + 1) : 0;
+            const b3 = i + 2 < len ? binary.charCodeAt(i + 2) : 0;
+            coverData += chars[b1 >> 2];
+            coverData += chars[((b1 & 3) << 4) | (b2 >> 4)];
+            coverData += i + 1 < len ? chars[((b2 & 15) << 2) | (b3 >> 6)] : '=';
+            coverData += i + 2 < len ? chars[b3 & 63] : '=';
+          }
         }
       } catch (e: any) {
         songloft.log.warn(`[scraper] 封面下载失败: ${e.message || e}`);
@@ -265,6 +284,7 @@ async function writeTags(songId: number, result: ScrapeResult): Promise<string> 
       artist: result.artist,
       album: result.album || '',
       lyrics: result.lyrics || '',
+      cover_url: result.cover_url || '',
       cover_data: coverData,
     };
 
@@ -292,16 +312,6 @@ async function writeTags(songId: number, result: ScrapeResult): Promise<string> 
     songloft.log.error(`[scraper] 写入异常: ${e.message || e}`);
     return 'failed';
   }
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  // QuickJS 环境下 btoa 应该可用
-  return btoa(binary);
 }
 
 function sleep(ms: number): Promise<void> {
