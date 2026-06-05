@@ -70,13 +70,6 @@ docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc
 
 - Songloft v2.5.0+
 
-## 开发
-
-```sh
-npm install
-npm run build
-```
-
 ## 免责声明
 
 本插件仅提供音源搜索的通用框架，所有 API URL 由用户自行填写。插件的示例 URL 仅供学习参考，使用何种 API 及是否填写均为用户的自主行为。请遵守相关法律法规，不得用于侵权或商业用途。因用户行为产生的任何问题，开发者不承担责任。
