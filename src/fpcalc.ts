@@ -52,13 +52,9 @@ function getDownloadUrl(info: PlatformInfo): string {
  * 检查 fpcalc 是否已安装可用
  */
 export async function isFpcalcAvailable(): Promise<boolean> {
-  // 先尝试运行（bin/或系统PATH），exec 失败再查 exists
   try {
     const r = await songloft.command.exec('fpcalc', ['-version'], { timeout: 5000 });
-    if (r.exitCode === 0) return true;
-  } catch { /* ignore */ }
-  try {
-    return await songloft.command.exists('fpcalc');
+    return r.exitCode === 0;
   } catch {
     return false;
   }
@@ -116,7 +112,7 @@ export async function extractFingerprint(filePath: string): Promise<{
   duration: number;
 } | null> {
   try {
-    const result = await songloft.command.exec('fpcalc', ['-json', '/app/' + filePath], { timeout: 15000 });
+    const result = await songloft.command.exec('fpcalc', ['-json', filePath], { timeout: 15000 });
     if (result.exitCode !== 0) {
       songloft.log.warn(`[fpcalc] 执行失败 (exit=${result.exitCode}): ${result.stderr}`);
       return null;

@@ -94,7 +94,7 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
     result.fileWriteStatus = writeResult;
     results.push(result);
 
-    if (writeResult === 'written' || writeResult === 'skipped') {
+    if (writeResult === 'written' || writeResult === 'unchanged' || writeResult === 'skipped') {
       success++;
     } else {
       failed++;
@@ -187,17 +187,17 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   if (cfg.enable_netease && cfg.netease_api_url) {
     const r = await searchNetease(keyword, cfg.netease_api_url);
     addSourceResults(r, 'netease');
-    await sleep(500);
+    await sleep(50);
   }
   if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
     const r = await searchQQMusic(keyword, cfg.qqmusic_api_url);
     addSourceResults(r, 'qqmusic');
-    await sleep(500);
+    await sleep(50);
   }
   if (cfg.enable_kugou && cfg.kugou_api_url) {
     const r = await searchKuGou(keyword, cfg.kugou_api_url);
     addSourceResults(r, 'kugou');
-    await sleep(500);
+    await sleep(50);
   }
 
   // 日志输出各源得分

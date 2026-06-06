@@ -20,7 +20,7 @@ export interface ScraperConfig {
 }
 
 export const DEFAULT_CONFIG: ScraperConfig = {
-  enable_acoustid: true,
+  enable_acoustid: false,
   acoustid_api_key: '',
   enable_netease: false,
   netease_api_url: '',
@@ -339,7 +339,7 @@ export async function enrichFromChineseSources(
     } catch (e: any) {
       songloft.log.warn(`[enrich] ${sourceName} 搜索异常: ${e.message || e}`);
     }
-    await sleep(300);
+    await sleep(50);
   };
 
   if (cfg.enable_netease && cfg.netease_api_url) {

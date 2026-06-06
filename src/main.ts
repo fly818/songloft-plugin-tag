@@ -97,11 +97,90 @@ router.put('/config', async (req) => {
     const updates = parseBody(req);
     const current = await loadConfig();
     const merged = { ...current, ...updates };
+
+    // 自动推导开关：有 Key/URL 则开启，清空则关闭
+    merged.enable_acoustid = !!(merged.acoustid_api_key);
+    merged.enable_netease  = !!(merged.netease_api_url);
+    merged.enable_qqmusic  = !!(merged.qqmusic_api_url);
+    merged.enable_kugou    = !!(merged.kugou_api_url);
+
     await saveConfig(merged);
     return jsonResponse({ status: 'ok', config: merged });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 400);
   }
+});
+
+// ============================================================
+// 源可连接性检测
+// ============================================================
+router.get('/config/status', async (_req) => {
+  const cfg = await loadConfig();
+  const result: Record<string, boolean> = {};
+  const probes: Promise<void>[] = [];
+
+  // AcoustID: 解析 JSON 判断 status 字段（无效 key 也返回 200）
+  if (cfg.acoustid_api_key) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(
+          `https://api.acoustid.org/v2/lookup?client=${cfg.acoustid_api_key}&duration=1&fingerprint=AQAAzJg8U&meta=recordingids`
+        );
+        const data = await resp.json();
+        // status='ok' → 正常；error.code=3(指纹无效,返回400) → key 有效
+        result['acoustid'] = data?.status === 'ok' || data?.error?.code === 3;
+      } catch { result['acoustid'] = false; }
+    })());
+  }
+
+  // 网易云
+  if (cfg.enable_netease) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(cfg.netease_api_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Referer': 'https://music.163.com', 'User-Agent': 'Mozilla/5.0' },
+          body: 's=test&type=1&limit=1',
+        });
+        if (!resp.ok) { result['netease'] = false; return; }
+        const data = await resp.json();
+        result['netease'] = data?.result?.songs !== undefined;
+      } catch { result['netease'] = false; }
+    })());
+  }
+
+  // QQ音乐
+  if (cfg.enable_qqmusic) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(
+          `${cfg.qqmusic_api_url}?w=test&format=json&n=1`,
+          { headers: { 'Referer': 'https://y.qq.com', 'User-Agent': 'Mozilla/5.0' } }
+        );
+        if (!resp.ok) { result['qqmusic'] = false; return; }
+        const data = await resp.json();
+        result['qqmusic'] = data?.data?.song?.list !== undefined;
+      } catch { result['qqmusic'] = false; }
+    })());
+  }
+
+  // 酷狗
+  if (cfg.enable_kugou) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(
+          `${cfg.kugou_api_url}?keyword=test&page=1&pagesize=1`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        );
+        if (!resp.ok) { result['kugou'] = false; return; }
+        const data = await resp.json();
+        result['kugou'] = data?.data?.lists !== undefined;
+      } catch { result['kugou'] = false; }
+    })());
+  }
+
+  await Promise.all(probes);
+  return jsonResponse(result);
 });
 
 // ============================================================
@@ -253,12 +332,21 @@ router.get('/song/:id', async (_req, params) => {
         }
       } catch { /* ignore */ }
     }
+    // 构建带认证的封面 URL（本地 cover 需 access_token，外链不需要）
+    let coverUrl = '';
+    if (s.cover_url) {
+      if (s.cover_url.startsWith('http://') || s.cover_url.startsWith('https://')) {
+        coverUrl = s.cover_url;
+      } else {
+        coverUrl = `${host}${s.cover_url}?access_token=${token}`;
+      }
+    }
     return jsonResponse({
       id: s.id,
       title: s.title || '',
       artist: s.artist || '',
       album: s.album || '',
-      cover_url: s.cover_url ? `${host}${s.cover_url}` : '',
+      cover_url: coverUrl,
       lyrics: lyrics,
       genre: s.genre || '',
       file_path: s.file_path || '',
