@@ -31,26 +31,19 @@
 
 声纹匹配通过音频指纹精确识别歌曲，大幅提高刮削准确率。
 
-1. **安装 fpcalc**
-   - **Docker：** 一行命令安装并复制到系统 PATH：
-```sh
-docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc /usr/local/bin/fpcalc"
-```
-然后在插件页面点 **安装 fpcalc**
-   - **其他系统：** 直接点插件页面的 **安装 fpcalc**
-2. 安装成功后，AcoustID 卡片右上角显示 "已安装 fpcalc"
-3. 在 AcoustID Key 输入框中填入你的 Key（去 [acoustid.org/webservice](https://acoustid.org/webservice) 免费注册获取永久 Key）
-4. 点击 AcoustID 卡片启用（圆点变绿）
-5. 插件内置的临时 Key 仅供试用，可能随时失效，建议注册永久 Key
+1. 在 AcoustID Key 输入框中填入你的 Key（去 [acoustid.org/webservice](https://acoustid.org/webservice) 免费注册获取永久 Key）
+2. 点击 **保存配置**，卡片右上角圆点亮绿色表示 Key 有效
+3. fpcalc 由 Songloft 镜像预装，无需额外安装（Docker 环境下）
+4. 非 Docker 环境：在插件页面点 **安装 fpcalc** 自动下载对应平台的 fpcalc
 
 ## 开启国内音源
 
 国内音源用于拉取封面和歌词，同时作为声纹匹配的补充。
 
 1. 在**刮削源**区域，填入对应的 **API URL**
-2. 点 **保存配置**
-3. 点击音源卡片启用（圆点变绿）
-4. 未填 URL 时无法启用，保存空 URL 会自动关闭音源
+2. 点 **保存配置**，系统自动检测连通性
+3. 卡片右上角圆点：绿色=已配置且可达，红色=不可达，灰色=未配置
+4. 清空 URL 再保存会自动关闭该音源
 
 ## 支持的音乐格式
 
@@ -61,14 +54,14 @@ docker exec songloft sh -c "apk add --no-cache chromaprint && cp /usr/bin/fpcalc
 | MP4 / M4A | ✅ | ✅ |
 | OGG | ✅ | ✅ |
 | WAV | ✅ | ✅ |
-| APE | ✅ | ❌ |
+| APE | ✅ | ✅ |
 | WMA | ❌ | ❌ |
 
-> ⚠️ FLAC 文件如果前端有 ID3v2 头（`magic=ID3`），标签写入会失败。需先用工具去掉 ID3 头。
+> ✅ APE/WAV 标签写入需要 Songloft v2.6.1+。旧版本写入会静默跳过。
 
 ## 环境要求
 
-- Songloft v2.5.0+
+- Songloft v2.6.1+
 
 ## 免责声明
 
