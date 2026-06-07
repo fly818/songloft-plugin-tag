@@ -4,7 +4,6 @@
 // 刮削源客户端
 // ============================================================
 
-import { extractFingerprint } from './fpcalc';
 import { scoreMatch } from './scoring';
 
 // ---- 配置接口 ----
@@ -45,12 +44,17 @@ export interface SearchResult {
 }
 
 // ---- AcoustID / MusicBrainz ----
-export async function searchAcoustid(filePath: string, apiKey: string): Promise<SearchResult[]> {
-  const fp = await extractFingerprint(filePath);
-  if (!fp || !fp.fingerprint) return [];
+// 使用主程序已计算的 Chromaprint fingerprint，无需插件自行安装 fpcalc。
+export async function searchAcoustid(fingerprint: string, duration: number, apiKey: string): Promise<SearchResult[]> {
+  // 防御：主程序 v2.6.3 指纹存为原始二进制，JSON 序列化损坏后体积巨大
+  // 正常指纹 ~200 字符，损坏的二进制指纹会 >1000 字符，直接跳过避免 414
+  if (!fingerprint || fingerprint.length > 1000) {
+    songloft.log.warn(`[acoustid] 指纹异常(len=${fingerprint?.length||0})，可能是主程序二进制存储问题，降级到文本搜索`);
+    return [];
+  }
 
   try {
-    const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(fp.duration)}&fingerprint=${encodeURIComponent(fp.fingerprint)}&meta=recordingids`;
+    const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(duration)}&fingerprint=${encodeURIComponent(fingerprint)}&meta=recordingids`;
 
     const resp = await fetch(`https://api.acoustid.org/v2/lookup?${qs}`, {
       headers: { 'User-Agent': 'songloft-plugin-tag/1.0' },

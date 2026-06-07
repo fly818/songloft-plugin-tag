@@ -1,8 +1,8 @@
 /// <reference types="@songloft/plugin-sdk" />
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
+import { toSimplified } from './t2s';
 import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, type ScrapeResult } from './scraper';
 import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './sources';
-import { isFpcalcAvailable, installFpcalc, getPlatformInfo } from './fpcalc';
 
 const router = createRouter();
 
@@ -184,18 +184,15 @@ router.get('/config/status', async (_req) => {
 });
 
 // ============================================================
-// fpcalc 管理
+// 调试：t2s 繁简转换测试
 // ============================================================
-router.get('/fpcalc/status', async (_req) => {
-  const available = await isFpcalcAvailable();
-  const platform = getPlatformInfo();
-  return jsonResponse({ available, ...platform });
+router.get('/test/t2s', async (_req) => {
+  const text = '陳小春 獨家記憶 取消资格';
+  const result = toSimplified(text);
+  return jsonResponse({ input: text, output: result });
 });
 
-router.post('/fpcalc/install', async (_req) => {
-  const result = await installFpcalc();
-  return jsonResponse(result, result.success ? 200 : 500);
-});
+
 
 // ============================================================
 // 刮削
@@ -205,13 +202,18 @@ router.post('/fpcalc/install', async (_req) => {
 router.post('/scrape/batch', async (req) => {
   const body = parseBody(req);
   const ids: number[] = [...new Set(body.ids || [])];
+  const force: boolean = body.force === true;
   if (!ids.length) return jsonResponse({ error: '请提供歌曲 ID 列表' }, 400);
 
-  // 过滤已成功刮削的
-  const doneIds = await getScrapedDone();
-  const skipIds = ids.filter(id => doneIds.has(id));
-  const newIds = ids.filter(id => !doneIds.has(id));
-  songloft.log.info(`[batch] 总${ids.length}首, 已刮过${skipIds.length}首跳过, 待刮${newIds.length}首`);
+  // 过滤已成功刮削的（强制模式跳过此检查）
+  let skipIds: number[] = [];
+  let newIds = ids;
+  if (!force) {
+    const doneIds = await getScrapedDone();
+    skipIds = ids.filter(id => doneIds.has(id));
+    newIds = ids.filter(id => !doneIds.has(id));
+  }
+  songloft.log.info(`[batch] 总${ids.length}首${force?'(强制)':''}, 已刮过${skipIds.length}首跳过, 待刮${newIds.length}首`);
 
   const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const task = {
@@ -235,7 +237,7 @@ router.post('/scrape/batch', async (req) => {
           const ws = await writeTags(songId, result);
           result.fileWriteStatus = ws;
           task.results.push(result);
-          if (ws === 'written' || ws === 'skipped') {
+          if (ws === 'written' || ws === 'unchanged' || ws === 'skipped') {
             task.success++;
             await markScrapedDone(songId);
           } else {
@@ -439,6 +441,16 @@ router.get('/storage/failed', async (_req) => {
 router.post('/storage/failed', async (req) => {
   try {
     await songloft.storage.set('failed_songs', req.body || '[]');
+    return jsonResponse({ ok: true });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
+});
+
+// 清除已刮削标记
+router.delete('/storage/scraped', async (_req) => {
+  try {
+    await songloft.storage.set('scraped_done', '[]');
     return jsonResponse({ ok: true });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 500);

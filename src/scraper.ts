@@ -16,7 +16,6 @@ import {
   type SearchResult,
 } from './sources';
 import { scoreMatch, isScoreAcceptable, SCORE_THRESHOLD } from './scoring';
-import { isFpcalcAvailable } from './fpcalc';
 import { toSimplified } from './t2s';
 
 export interface ScrapeResult {
@@ -132,15 +131,13 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   const keyword = `${candidate.artist} ${candidate.title}`.trim();
   songloft.log.info(`[scraper] 开始刮削: ${keyword} (songId=${songId})`);
 
-  // 2. 声纹优先
+  // 2. 声纹优先（使用主程序已计算的指纹）
   if (!cfg.enable_acoustid) {
     songloft.log.info(`[scraper] AcoustID 未启用 (cfg.enable_acoustid=${cfg.enable_acoustid})`);
-  } else if (!filePath) {
-    songloft.log.info(`[scraper] AcoustID 跳过: filePath 为空`);
+  } else if (!song.fingerprint) {
+    songloft.log.info(`[scraper] AcoustID 跳过: 歌曲无指纹 (主程序扫描后异步计算，请稍后重试)`);
   } else {
-    const fpAvailable = await isFpcalcAvailable();
-    if (fpAvailable) {
-      const acoustidResults = await searchAcoustid(filePath, cfg.acoustid_api_key);
+    const acoustidResults = await searchAcoustid(song.fingerprint, song.fingerprint_duration || song.duration || 0, cfg.acoustid_api_key);
       if (acoustidResults.length > 0) {
         const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
         if (best.score > SCORE_THRESHOLD) {
@@ -164,9 +161,6 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
           return buildResult(songId, best, candidate, {});
         }
       }
-    } else {
-      songloft.log.info('[scraper] fpcalc 未安装，跳过声纹匹配');
-    }
   }
 
   // 3. 文本搜索兜底
@@ -250,41 +244,13 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
 
-    // 下载封面并转 base64（纯字符串，不依赖 arrayBuffer）
-    let coverData = '';
-    if (result.cover_url) {
-      try {
-        const coverResp = await fetch(result.cover_url);
-        if (coverResp.ok) {
-          const text = await coverResp.text();
-          let binary = '';
-          for (let i = 0; i < text.length; i++) {
-            binary += String.fromCharCode(text.charCodeAt(i) & 0xff);
-          }
-          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-          const len = binary.length;
-          for (let i = 0; i < len; i += 3) {
-            const b1 = binary.charCodeAt(i);
-            const b2 = i + 1 < len ? binary.charCodeAt(i + 1) : 0;
-            const b3 = i + 2 < len ? binary.charCodeAt(i + 2) : 0;
-            coverData += chars[b1 >> 2];
-            coverData += chars[((b1 & 3) << 4) | (b2 >> 4)];
-            coverData += i + 1 < len ? chars[((b2 & 15) << 2) | (b3 >> 6)] : '=';
-            coverData += i + 2 < len ? chars[b3 & 63] : '=';
-          }
-        }
-      } catch (e: any) {
-        songloft.log.warn(`[scraper] 封面下载失败: ${e.message || e}`);
-      }
-    }
-
+    // 封面直接传 URL 给后端下载（避免 QuickJS .text() 损坏二进制）
     const body: Record<string, string> = {
       title: result.title,
       artist: result.artist,
       album: result.album || '',
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
-      ...(coverData ? { cover_data: coverData } : {}),
     };
 
     const resp = await fetch(`${hostUrl}/api/v1/songs/${songId}/tags`, {
@@ -305,7 +271,6 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
     const data = await resp.json();
     const fileWrite = data.file_write || 'unknown';
     songloft.log.info(`[scraper] 标签写入完成: ${result.artist} - ${result.title} (file=${fileWrite})`);
-    result.cover_data = coverData;
     return fileWrite;
   } catch (e: any) {
     songloft.log.error(`[scraper] 写入异常: ${e.message || e}`);

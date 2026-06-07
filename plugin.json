@@ -8,10 +8,9 @@
   "minHostVersion": "2.5.0",
   "permissions": [
     "storage",
-    "songs.read",
-    "command"
+    "songs.read"
   ],
-  "entryHash": "72d347788b5d5390368e1b5529a2ebaf6a3e779a7829ec518cd2148a65a9beff",
-  "zipHash": "8599e170d33cf79fafbf1bae6472b12dace40784eee68ab74d3736ce54a6a714",
+  "entryHash": "cea83dbb8cada597b98bc2cc264a8532bb613302594d3bc3e37d164fc598c10b",
+  "zipHash": "00d14416340531fd7f2a02bd4690463427f45e1fd8e0da7eeae9043b518edf1a",
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/manifest.json"
 }
