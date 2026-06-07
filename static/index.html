@@ -3,22 +3,21 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>标签刮削</title>
 <style>
 .mi svg{width:20px;height:20px;fill:currentColor;vertical-align:middle}
-:root{--p:#D0BCFF;--pc:#4F378B;--poc:#E8DEF8;--s:#141218;--os:#E6E1E5;--sv:#49454F;--osv:#CAC4D0;--ol:#938F99;--er:#F2B8B5;--gr:#7FDD8F}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-size:14px;line-height:1.5}
-.hdr{background:#1D192B;color:var(--p);padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:99;flex-wrap:wrap}
+:root{--p:var(--md-primary);--pc:var(--md-primary-container);--poc:var(--md-on-primary-container);--s:var(--md-surface);--os:var(--md-on-surface);--sv:var(--md-surface-variant);--osv:var(--md-on-surface-variant);--ol:var(--md-outline);--er:var(--md-error);--gr:var(--md-success);--sf1:var(--md-surface-1);--sf2:var(--md-surface-2)}
+body{font-size:14px}
+.hdr{background:var(--sf1);color:var(--p);padding:8px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:99;flex-wrap:wrap}
 .hdr h1{font-size:16px;font-weight:500}
 .tabs{display:flex;gap:2px;background:rgba(255,255,255,0.08);border-radius:10px;padding:2px}
 .tabs button{padding:6px 14px;border:none;background:none;color:rgba(255,255,255,0.5);font-size:12px;border-radius:8px;cursor:pointer}
 .tabs button.on{background:rgba(208,188,255,0.2);color:var(--p);font-weight:500}
 .ctn{max-width:900px;margin:0 auto;padding:12px}
-.card{background:#1D1B20;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.card{background:var(--sf1);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
 .card h3{font-size:13px;color:var(--osv);letter-spacing:.5px;margin-bottom:12px;font-weight:500}
 .srch{display:flex;gap:8px;margin-bottom:12px}
-.srch input{flex:1;padding:10px 14px;border-radius:28px;border:1px solid var(--ol);font-size:14px;outline:none;background:#2B2930;color:var(--os)}
+.srch input{flex:1;padding:10px 14px;border-radius:28px;border:1px solid var(--ol);font-size:14px;outline:none;background:var(--sf2);color:var(--os)}
 .srch input:focus{border-color:var(--p)}
 .tbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
-.tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--ol);background:#2B2930;font-size:12px;cursor:pointer;color:var(--os)}
+.tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--ol);background:var(--sf2);font-size:12px;cursor:pointer;color:var(--os)}
 .tbar button:active{background:var(--pc)}
 .slist{max-height:50vh;overflow-y:auto}
 .srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:12px;cursor:pointer;color:var(--os)}
@@ -30,11 +29,11 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 .sinfo .u{font-size:12px;color:var(--osv)}
 .btn{padding:10px 20px;border-radius:20px;border:none;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn:active{opacity:.8}
-.btn-p{background:var(--p);color:#1D192B}
-.btn-stop{background:#F2B8B5;color:#601410;border:none}
-.btn-stop:disabled{background:#3E3A44;color:var(--osv)}
+.btn-p{background:var(--p);color:var(--sf1)}
+.btn-stop{background:#F2B8B5;color:var(--md-on-error);border:none}
+.btn-stop:disabled{background:var(--sv);color:var(--osv)}
 .btn-s{background:var(--pc);color:var(--poc)}
-.btn-e{background:var(--er);color:#601410}
+.btn-e{background:var(--er);color:var(--md-on-error)}
 .btn-sm{padding:6px 14px;font-size:12px;border-radius:14px}
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .schip{padding:10px;border-radius:12px;border:2px solid var(--ol);cursor:pointer;text-align:center;font-size:13px;position:relative}
@@ -44,22 +43,22 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 .schip .st.on{background:var(--gr)}.schip .st.off{background:var(--sv)}
 .schip .fpr{position:absolute;top:6px;right:8px;font-size:10px;color:var(--osv)}
 .cfg{margin-top:8px}.cfg label{font-size:11px;color:var(--osv);display:block}
-.cfg input{width:50%;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);font-size:12px;margin-top:2px;background:#2B2930;color:var(--os)}
+.cfg input{width:50%;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);font-size:12px;margin-top:2px;background:var(--sf2);color:var(--os)}
 .cfg .eg{font-size:10px;color:var(--osv);margin-left:8px;user-select:all;word-break:break-all;display:inline-block;vertical-align:middle;max-width:45%}
 .cfg .err{font-size:10px;color:var(--er);margin-left:8px;display:none}
-.log{max-height:150px;overflow-y:auto;background:#2B2930;border-radius:12px;padding:8px 12px;font-size:11px;font-family:monospace;color:var(--os)}
+.log{max-height:150px;overflow-y:auto;background:var(--sf2);border-radius:12px;padding:8px 12px;font-size:11px;font-family:monospace;color:var(--os)}
 .log .e{color:var(--er)}
 .pbar{width:100%;height:4px;background:var(--sv);border-radius:2px;margin:8px 0;overflow:hidden}
 .pfill{height:100%;background:var(--p);border-radius:2px;transition:width .3s}
 .ptxt{font-size:12px;color:var(--osv);text-align:center}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:1000}
-.mbody{background:#1D1B20;border-radius:20px;padding:20px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;color:var(--os)}
+.mbody{background:var(--sf1);border-radius:20px;padding:20px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;color:var(--os)}
 .mbody h3{font-size:16px;margin-bottom:12px}
 .fld{margin-bottom:10px}.fld label{font-size:12px;color:var(--osv);display:block}
-.fld input,.fld textarea{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--ol);font-size:14px;background:#2B2930;color:var(--os)}
+.fld input,.fld textarea{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--ol);font-size:14px;background:var(--sf2);color:var(--os)}
 .fld textarea{min-height:60px;resize:vertical}
 .erow{display:flex;align-items:center;padding:8px 0;gap:8px;border-bottom:1px solid var(--sv)}
-.erow .sinfo{flex:1}.erow input{width:60px;padding:4px 8px;border-radius:8px;border:1px solid var(--ol);font-size:12px;background:#2B2930;color:var(--os)}
+.erow .sinfo{flex:1}.erow input{width:60px;padding:4px 8px;border-radius:8px;border:1px solid var(--ol);font-size:12px;background:var(--sf2);color:var(--os)}
 .toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--pc);color:var(--poc);padding:8px 20px;border-radius:20px;font-size:13px;z-index:999}
 .tab-content{display:none}.tab-content.on{display:block}
 @media(max-width:600px){.sgrid{grid-template-columns:1fr}}
@@ -98,11 +97,11 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 <div class="slist" id="failedList"><div style="text-align:center;padding:20px;color:var(--osv)">点击刷新加载</div></div></div></div><div class="tab-content" id="tab-edit">
 <div class="card"><h3>标签编辑</h3>
 <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-<input id="eq" placeholder="搜索..." onkeydown="if(event.key==='Enter')loadEditView()" style="flex:1;min-width:120px;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);background:#2B2930;color:var(--os);outline:none">
+<input id="eq" placeholder="搜索..." onkeydown="if(event.key==='Enter')loadEditView()" style="flex:1;min-width:120px;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);background:var(--sf2);color:var(--os);outline:none">
 <button class="btn btn-sm btn-s" onclick="loadEditView()"><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span></button>
 </div>
 <div class="slist" id="editSongList" style="max-height:35vh"></div>
-<div id="editPanel" style="display:none;margin-top:8px;background:#2B2930;border-radius:12px;padding:12px">
+<div id="editPanel" style="display:none;margin-top:8px;background:var(--sf2);border-radius:12px;padding:12px">
 <div style="display:flex;gap:12px;margin-bottom:8px">
 <div style="flex-shrink:0">
 <div id="editCover" style="width:80px;height:80px;border-radius:8px;background:var(--sv);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden"><span class=mi><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span></div>
