@@ -90,40 +90,42 @@ function _findMatchingBlocks(
   b: string, bLo: number, bHi: number,
   blocks: MatchBlock[]
 ): void {
-  // 找到 a[aLo:aHi] 和 b[bLo:bHi] 的最长公共子串
-  let bestLen = 0;
-  let bestA = -1;
-  let bestB = -1;
+  // 用显式栈替代递归，防止极端长字符串导致栈溢出
+  const stack: Array<{aLo: number; aHi: number; bLo: number; bHi: number}> = [];
+  stack.push({ aLo, aHi, bLo, bHi });
 
-  // 用 LCS 的 DP 来找最长匹配（单次调用可以更高效但此实现够用）
-  const subA = a.substring(aLo, aHi);
-  const subB = b.substring(bLo, bHi);
-  const dp: number[][] = Array.from({ length: subA.length + 1 }, () =>
-    new Array(subB.length + 1).fill(0)
-  );
+  while (stack.length > 0) {
+    const { aLo, aHi, bLo, bHi } = stack.pop()!;
 
-  for (let i = 1; i <= subA.length; i++) {
-    for (let j = 1; j <= subB.length; j++) {
-      if (subA[i - 1] === subB[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestA = aLo + i - bestLen;
-          bestB = bLo + j - bestLen;
+    let bestLen = 0;
+    let bestA = -1;
+    let bestB = -1;
+
+    const subA = a.substring(aLo, aHi);
+    const subB = b.substring(bLo, bHi);
+    const dp: number[][] = Array.from({ length: subA.length + 1 }, () =>
+      new Array(subB.length + 1).fill(0)
+    );
+
+    for (let i = 1; i <= subA.length; i++) {
+      for (let j = 1; j <= subB.length; j++) {
+        if (subA[i - 1] === subB[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+          if (dp[i][j] > bestLen) {
+            bestLen = dp[i][j];
+            bestA = aLo + i - bestLen;
+            bestB = bLo + j - bestLen;
+          }
         }
       }
     }
-  }
 
-  if (bestLen > 0) {
-    // 递归处理匹配块前后的部分
-    _findMatchingBlocks(a, aLo, bestA, b, bLo, bestB, blocks);
-    blocks.push({ aStart: bestA, bStart: bestB, length: bestLen });
-    _findMatchingBlocks(
-      a, bestA + bestLen, aHi,
-      b, bestB + bestLen, bHi,
-      blocks
-    );
+    if (bestLen > 0) {
+      // 先 push 右侧子任务，再 push 左侧（栈 LIFO，保证左侧先处理，最终 blocks 有序）
+      stack.push({ aLo: bestA + bestLen, aHi, bLo: bestB + bestLen, bHi });
+      blocks.push({ aStart: bestA, bStart: bestB, length: bestLen });
+      stack.push({ aLo, aHi: bestA, bLo, bHi: bestB });
+    }
   }
 }
 

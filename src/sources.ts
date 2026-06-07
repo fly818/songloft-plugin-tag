@@ -6,6 +6,28 @@
 
 import { scoreMatch } from './scoring';
 
+// ---- UTF-8 解码（atob 后在 QuickJS 中将二进制字节串转为 Unicode） ----
+function utf8Decode(bytes: string): string {
+  let r = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const b1 = bytes.charCodeAt(i);
+    if (b1 < 0x80) {
+      r += String.fromCharCode(b1);
+      i += 1;
+    } else if ((b1 & 0xE0) === 0xC0 && i + 1 < bytes.length) {
+      r += String.fromCharCode(((b1 & 0x1F) << 6) | (bytes.charCodeAt(i + 1) & 0x3F));
+      i += 2;
+    } else if ((b1 & 0xF0) === 0xE0 && i + 2 < bytes.length) {
+      r += String.fromCharCode(((b1 & 0x0F) << 12) | ((bytes.charCodeAt(i + 1) & 0x3F) << 6) | (bytes.charCodeAt(i + 2) & 0x3F));
+      i += 3;
+    } else {
+      i += 1; // 跳过非法字节
+    }
+  }
+  return r;
+}
+
 // ---- SSRF 防护：内网地址拦截 ----
 // 提取 URL 中的 hostname（纯字符串解析，不依赖 URL 构造函数）
 function extractHostname(url: string): string {
@@ -294,7 +316,7 @@ async function fetchLyricsKuGou(hash: string, albumId?: string): Promise<string>
     // 酷狗歌词接口返回 {content: "base64(lrc)", ...}
     if (data?.content) {
       try {
-        return atob(data.content);
+        return utf8Decode(atob(data.content));
       } catch {
         return '';
       }
