@@ -2,7 +2,6 @@
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
 import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, type ScrapeResult } from './scraper';
 import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './sources';
-import { isFpcalcAvailable, installFpcalc, getPlatformInfo } from './fpcalc';
 
 const router = createRouter();
 
@@ -181,20 +180,6 @@ router.get('/config/status', async (_req) => {
 
   await Promise.all(probes);
   return jsonResponse(result);
-});
-
-// ============================================================
-// fpcalc 管理
-// ============================================================
-router.get('/fpcalc/status', async (_req) => {
-  const available = await isFpcalcAvailable();
-  const platform = getPlatformInfo();
-  return jsonResponse({ available, ...platform });
-});
-
-router.post('/fpcalc/install', async (_req) => {
-  const result = await installFpcalc();
-  return jsonResponse(result, result.success ? 200 : 500);
 });
 
 // ============================================================
@@ -507,15 +492,6 @@ router.post('/scrape/manual/:id', async (req, params) => {
 // ============================================================
 async function onInit(): Promise<void> {
   songloft.log.info('[tag] 标签刮削插件已启动');
-  // 清理旧版残留（bin/ 下文件在 overlayfs 上会导致 AcoustID 失败）
-  try {
-    const files = await songloft.command.listBin();
-    if (Array.isArray(files)) {
-      for (const f of files) {
-        try { await songloft.command.deleteBin(f); } catch { /* ok */ }
-      }
-    }
-  } catch { /* ok */ }
   // 确保默认配置存在
   const existing = await loadConfig();
   if (!existing || Object.keys(existing).length === 0) {

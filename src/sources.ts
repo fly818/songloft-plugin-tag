@@ -4,7 +4,6 @@
 // 刮削源客户端
 // ============================================================
 
-import { extractFingerprint } from './fpcalc';
 import { scoreMatch } from './scoring';
 
 // ---- 配置接口 ----
@@ -45,12 +44,11 @@ export interface SearchResult {
 }
 
 // ---- AcoustID / MusicBrainz ----
-export async function searchAcoustid(filePath: string, apiKey: string): Promise<SearchResult[]> {
-  const fp = await extractFingerprint(filePath);
-  if (!fp || !fp.fingerprint) return [];
+export async function searchAcoustid(fingerprint: string, duration: number, apiKey: string): Promise<SearchResult[]> {
+  if (!fingerprint) return [];
 
   try {
-    const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(fp.duration)}&fingerprint=${encodeURIComponent(fp.fingerprint)}&meta=recordingids`;
+    const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(duration)}&fingerprint=${encodeURIComponent(fingerprint)}&meta=recordingids`;
 
     const resp = await fetch(`https://api.acoustid.org/v2/lookup?${qs}`, {
       headers: { 'User-Agent': 'songloft-plugin-tag/1.0' },

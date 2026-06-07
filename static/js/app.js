@@ -28,7 +28,6 @@ function bindEvents() {
     E('btnStop').addEventListener('click', stopBatch);
     E('btnOne').addEventListener('click', scrapeOne);
     E('btnPrev').addEventListener('click', preview);
-    E('btnInstallFpcalc').addEventListener('click', installFpcalc);
     E('btnSaveCfg').addEventListener('click', saveCfg);
 
     E('btnLoadFailed').addEventListener('click', loadFailed);
@@ -76,7 +75,6 @@ async function init() {
     await loadCfg();
     chkSources();
     await loadSongs();
-    await chkFp();
     await loadFailed();
     resumeBatch();
 }
@@ -183,34 +181,6 @@ function uiCfg() {
     E('qu').value = S.cfg.qqmusic_api_url || '';
     E('ku').value = S.cfg.kugou_api_url || '';
     E('cfgPanel').style.display = 'block';
-}
-
-async function chkFp() {
-    try {
-        var r = await af('./fpcalc/status');
-        var d = await r.json();
-        E('fpStat').textContent = d.available ? '已安装fpcalc' : '未安装fpcalc';
-        E('btnInstallFpcalc').style.display = d.available ? 'none' : '';
-    } catch (e) {}
-}
-
-async function installFpcalc() {
-    var b = E('btnInstallFpcalc');
-    b.disabled = true;
-    b.innerHTML = '...';
-    for (var i = 0; i < 3; i++) {
-        try {
-            var r = await af('./fpcalc/install', { method: 'POST' });
-            var t = await r.text();
-            try {
-                var d = JSON.parse(t);
-                if (d.success) { log('fpcalc ok'); toast('done'); E('btnInstallFpcalc').style.display = 'none'; await chkFp(); break; }
-                else { log('fail:' + d.error, 'e'); break; }
-            } catch (e2) { if (i < 2) { await sleep(1000); continue; } log('fp parse err:' + t.substring(0, 80), 'e'); }
-        } catch (e) { if (i < 2) { await sleep(1000); continue; } log('fp load err:' + e.message, 'e'); }
-    }
-    b.disabled = false;
-    b.innerHTML = '<span class="material-symbols-outlined">download</span> install fpcalc';
 }
 
 async function loadSongs(kw) {

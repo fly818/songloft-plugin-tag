@@ -8,8 +8,7 @@
   "minHostVersion": "2.5.0",
   "permissions": [
     "storage",
-    "songs.read",
-    "command"
+    "songs.read"
   ],
   "entryHash": "72d347788b5d5390368e1b5529a2ebaf6a3e779a7829ec518cd2148a65a9beff",
   "zipHash": "8599e170d33cf79fafbf1bae6472b12dace40784eee68ab74d3736ce54a6a714",

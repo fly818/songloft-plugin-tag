@@ -16,7 +16,6 @@ import {
   type SearchResult,
 } from './sources';
 import { scoreMatch, isScoreAcceptable, SCORE_THRESHOLD } from './scoring';
-import { isFpcalcAvailable } from './fpcalc';
 import { toSimplified } from './t2s';
 
 export interface ScrapeResult {
@@ -132,40 +131,38 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   const keyword = `${candidate.artist} ${candidate.title}`.trim();
   songloft.log.info(`[scraper] 开始刮削: ${keyword} (songId=${songId})`);
 
-  // 2. 声纹优先
+  // 2. 声纹优先（使用主程序已计算的指纹）
+  const fingerprint = (song as any).fingerprint || '';
+  const fpDuration = (song as any).fingerprint_duration || 0;
+
   if (!cfg.enable_acoustid) {
     songloft.log.info(`[scraper] AcoustID 未启用 (cfg.enable_acoustid=${cfg.enable_acoustid})`);
-  } else if (!filePath) {
-    songloft.log.info(`[scraper] AcoustID 跳过: filePath 为空`);
+  } else if (!fingerprint) {
+    songloft.log.info('[scraper] 歌曲无指纹，跳过声纹匹配（请先在扫描管理中计算指纹）');
   } else {
-    const fpAvailable = await isFpcalcAvailable();
-    if (fpAvailable) {
-      const acoustidResults = await searchAcoustid(filePath, cfg.acoustid_api_key);
-      if (acoustidResults.length > 0) {
-        const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
-        if (best.score > SCORE_THRESHOLD) {
-          songloft.log.info(`[scraper] 声纹匹配成功: ${best.artist} - ${best.title} (${best.score.toFixed(2)})`);
+    const acoustidResults = await searchAcoustid(fingerprint, fpDuration, cfg.acoustid_api_key);
+    if (acoustidResults.length > 0) {
+      const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
+      if (best.score > SCORE_THRESHOLD) {
+        songloft.log.info(`[scraper] 声纹匹配成功: ${best.artist} - ${best.title} (${best.score.toFixed(2)})`);
 
-          // 繁→简转换
-          best.artist = toSimplified(best.artist);
-          best.title = toSimplified(best.title);
-          best.album = toSimplified(best.album);
+        // 繁→简转换
+        best.artist = toSimplified(best.artist);
+        best.title = toSimplified(best.title);
+        best.album = toSimplified(best.album);
 
-          // 去国内源富化封面 + 歌词
-          const enrich = await enrichFromChineseSources(best.artist, best.title, candidate, cfg);
-          if (enrich.cover_url) {
-            best.cover_url = enrich.cover_url;
-            songloft.log.info(`[scraper] 封面来自 ${enrich.source}: ${enrich.cover_url.substring(0, 60)}...`);
-          }
-          if (enrich.lyrics) {
-            best.lyrics = enrich.lyrics;
-          }
-
-          return buildResult(songId, best, candidate, {});
+        // 去国内源富化封面 + 歌词
+        const enrich = await enrichFromChineseSources(best.artist, best.title, candidate, cfg);
+        if (enrich.cover_url) {
+          best.cover_url = enrich.cover_url;
+          songloft.log.info(`[scraper] 封面来自 ${enrich.source}: ${enrich.cover_url.substring(0, 60)}...`);
         }
+        if (enrich.lyrics) {
+          best.lyrics = enrich.lyrics;
+        }
+
+        return buildResult(songId, best, candidate, {});
       }
-    } else {
-      songloft.log.info('[scraper] fpcalc 未安装，跳过声纹匹配');
     }
   }
 
