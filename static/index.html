@@ -7,53 +7,58 @@
     <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
-    <!-- Header -->
-    <div class="hdr">
+    <!-- AppBar -->
+    <div class="app-bar">
         <span class="material-symbols-outlined">music_note</span>
         <h1>标签刮削</h1>
-        <div class="tabs">
-            <button class="on" data-tab="songs" onclick="switchTab('songs')">
-                <span class="material-symbols-outlined">music_note</span> 歌曲
-            </button>
-            <button data-tab="failed" onclick="switchTab('failed')">
-                <span class="material-symbols-outlined">warning</span> 失败
-            </button>
-            <button data-tab="edit" onclick="switchTab('edit');loadEditView()">
-                <span class="material-symbols-outlined">edit</span> 编辑
-            </button>
-        </div>
-        <button class="btn btn-sm" style="background:var(--md-surface-variant);color:var(--md-on-surface);border:none" onclick="loadSongs()">
+        <button class="btn-icon" id="btnRefresh">
             <span class="material-symbols-outlined">refresh</span>
         </button>
     </div>
 
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+        <button class="tab-item active" data-tab="songs">
+            <span class="material-symbols-outlined">music_note</span>
+            <span>歌曲</span>
+        </button>
+        <button class="tab-item" data-tab="failed">
+            <span class="material-symbols-outlined">warning</span>
+            <span>失败</span>
+        </button>
+        <button class="tab-item" data-tab="edit">
+            <span class="material-symbols-outlined">edit</span>
+            <span>编辑</span>
+        </button>
+    </nav>
+
     <div class="ctn">
         <!-- Tab 1: 歌曲 -->
-        <div class="tab-content on" id="tab-songs">
+        <div class="tab-content active" id="tab-songs">
             <div class="card">
                 <h3>歌曲列表</h3>
                 <div class="srch">
-                    <input id="q" placeholder="搜索..." onkeydown="if(event.key==='Enter')search()">
-                    <button class="btn btn-sm btn-s" onclick="search()">
+                    <input id="q" placeholder="搜索...">
+                    <button class="btn btn-sm btn-s" id="btnSearch">
                         <span class="material-symbols-outlined">search</span>
                     </button>
                 </div>
                 <div class="tbar">
-                    <button onclick="selAll()">全选</button>
-                    <button onclick="selNone()">清空</button>
-                    <button onclick="batch()" id="btnBatch" disabled>
+                    <button id="btnSelAll">全选</button>
+                    <button id="btnSelNone">清空</button>
+                    <button id="btnBatch" disabled>
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">inventory_2</span> 批量刮削
                     </button>
-                    <button onclick="stopBatch()" id="btnStop" disabled class="btn-stop">
+                    <button id="btnStop" disabled class="btn-stop">
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">stop</span> 停止
                     </button>
-                    <button class="btn btn-p" id="btnOne" onclick="scrapeOne()" disabled>
+                    <button class="btn btn-p" id="btnOne" disabled>
                         <span class="material-symbols-outlined">edit_note</span> 刮削
                     </button>
-                    <button class="btn btn-s" id="btnPrev" onclick="preview()" disabled>
+                    <button class="btn btn-s" id="btnPrev" disabled>
                         <span class="material-symbols-outlined">preview</span> 预览
                     </button>
-                    <button class="btn btn-sm btn-s" id="btnInstallFpcalc" onclick="installFpcalc()" style="margin-left:auto">
+                    <button class="btn btn-sm btn-s" id="btnInstallFpcalc" style="margin-left:auto">
                         <span class="material-symbols-outlined">download</span> 安装 fpcalc
                     </button>
                 </div>
@@ -106,7 +111,7 @@
                         <span class="eg">https://songsearch.kugou.com/song_search_v2</span>
                         <span class="err" id="err_ku">请填写 URL</span>
                     </div>
-                    <button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:8px">
+                    <button class="btn btn-sm btn-s" id="btnSaveCfg" style="margin-top:8px">
                         <span class="material-symbols-outlined">save</span> 保存配置
                     </button>
                 </div>
@@ -118,8 +123,8 @@
             <div class="card">
                 <h3><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">warning</span> 失败/跳过列表</h3>
                 <div class="tbar">
-                    <button onclick="loadFailed()"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">refresh</span> 刷新</button>
-                    <button onclick="clearFailed()"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">delete</span> 清空</button>
+                    <button id="btnLoadFailed"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">refresh</span> 刷新</button>
+                    <button id="btnClearFailed"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">delete</span> 清空</button>
                 </div>
                 <div class="slist" id="failedList">
                     <div style="text-align:center;padding:20px;color:var(--md-on-surface-variant)">点击刷新加载</div>
@@ -132,9 +137,9 @@
             <div class="card">
                 <h3>标签编辑</h3>
                 <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-                    <input id="eq" placeholder="搜索..." onkeydown="if(event.key==='Enter')loadEditView()"
+                    <input id="eq" placeholder="搜索..."
                            style="flex:1;min-width:120px;padding:6px 10px;border-radius:8px;border:1px solid var(--md-outline);background:var(--md-surface-2);color:var(--md-on-surface);outline:none;font-family:inherit">
-                    <button class="btn btn-sm btn-s" onclick="loadEditView()">
+                    <button class="btn btn-sm btn-s" id="btnEditSearch">
                         <span class="material-symbols-outlined">search</span>
                     </button>
                 </div>
@@ -153,10 +158,10 @@
                             <div class="fld"><label><span class="material-symbols-outlined">label</span> 流派 (Genre)</label><input id="ef_gen"></div>
                             <div class="fld"><label><span class="material-symbols-outlined">lyrics</span> 歌词 (Lyrics)</label><textarea id="ef_lyr" style="min-height:80px;font-size:12px"></textarea></div>
                             <div style="display:flex;gap:6px">
-                                <button class="btn btn-p btn-sm" onclick="saveEditPanel()">
+                                <button class="btn btn-p btn-sm" id="btnSaveEdit">
                                     <span class="material-symbols-outlined">save</span> 保存
                                 </button>
-                                <button class="btn btn-sm btn-p" onclick="scrapeEdit()">
+                                <button class="btn btn-sm btn-p" id="btnScrapeEdit">
                                     <span class="material-symbols-outlined">search</span> 刮削这首歌
                                 </button>
                             </div>
@@ -172,7 +177,7 @@
         <div class="mbody">
             <div style="display:flex;justify-content:space-between;margin-bottom:12px">
                 <h3 id="prevTitle">预览</h3>
-                <button onclick="closePrev()" style="background:none;border:none;cursor:pointer;color:var(--md-on-surface)">
+                <button id="btnClosePrev" style="background:none;border:none;cursor:pointer;color:var(--md-on-surface)">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
@@ -182,8 +187,8 @@
             <div id="prevMeta" style="font-size:12px;color:var(--md-on-surface-variant);margin-bottom:8px"></div>
             <div id="prevCover" style="margin-bottom:8px"></div>
             <div style="display:flex;gap:8px">
-                <button class="btn btn-p" onclick="applyPrev()"><span class="material-symbols-outlined">check</span> 写入</button>
-                <button class="btn btn-s" onclick="closePrev()">取消</button>
+                <button class="btn btn-p" id="btnApplyPrev"><span class="material-symbols-outlined">check</span> 写入</button>
+                <button class="btn btn-s" id="btnCancelPrev">取消</button>
             </div>
         </div>
     </div>
@@ -196,8 +201,8 @@
             <div class="fld"><label>标题（选填）</label><input id="rt"></div>
             <div class="fld"><label>搜索关键词</label><input id="rk" placeholder="留空则用 艺术家+标题"></div>
             <div style="display:flex;gap:8px;margin-top:8px">
-                <button class="btn btn-p" onclick="doRetry()"><span class="material-symbols-outlined">search</span> 搜索</button>
-                <button class="btn btn-s" onclick="closeRetry()">取消</button>
+                <button class="btn btn-p" id="btnDoRetry"><span class="material-symbols-outlined">search</span> 搜索</button>
+                <button class="btn btn-s" id="btnCancelRetry">取消</button>
             </div>
             <div id="retryRes" style="margin-top:8px;max-height:200px;overflow-y:auto"></div>
         </div>

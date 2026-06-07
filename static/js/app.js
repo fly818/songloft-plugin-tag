@@ -11,7 +11,68 @@ function af(u, o) {
     return fetch(u, o);
 }
 
+function bindEvents() {
+    document.querySelector('.tab-bar').addEventListener('click', function(ev) {
+        var btn = ev.target.closest('button[data-tab]');
+        if (!btn) return;
+        switchTab(btn.dataset.tab);
+    });
+
+    E('btnRefresh').addEventListener('click', function() { loadSongs(); });
+    E('q').addEventListener('keydown', function(ev) { if (ev.key === 'Enter') search(); });
+    E('btnSearch').addEventListener('click', search);
+
+    E('btnSelAll').addEventListener('click', selAll);
+    E('btnSelNone').addEventListener('click', selNone);
+    E('btnBatch').addEventListener('click', batch);
+    E('btnStop').addEventListener('click', stopBatch);
+    E('btnOne').addEventListener('click', scrapeOne);
+    E('btnPrev').addEventListener('click', preview);
+    E('btnInstallFpcalc').addEventListener('click', installFpcalc);
+    E('btnSaveCfg').addEventListener('click', saveCfg);
+
+    E('btnLoadFailed').addEventListener('click', loadFailed);
+    E('btnClearFailed').addEventListener('click', clearFailed);
+
+    E('eq').addEventListener('keydown', function(ev) { if (ev.key === 'Enter') loadEditView(); });
+    E('btnEditSearch').addEventListener('click', loadEditView);
+    E('btnSaveEdit').addEventListener('click', saveEditPanel);
+    E('btnScrapeEdit').addEventListener('click', scrapeEdit);
+
+    E('btnClosePrev').addEventListener('click', closePrev);
+    E('btnApplyPrev').addEventListener('click', applyPrev);
+    E('btnCancelPrev').addEventListener('click', closePrev);
+
+    E('btnDoRetry').addEventListener('click', doRetry);
+    E('btnCancelRetry').addEventListener('click', closeRetry);
+
+    E('list').addEventListener('click', function(ev) {
+        var row = ev.target.closest('.srow');
+        if (!row) return;
+        tgl(parseInt(row.dataset.id));
+    });
+
+    E('failedList').addEventListener('click', function(ev) {
+        var btn = ev.target.closest('[data-action="retry"]');
+        if (!btn) return;
+        retryFailed(parseInt(btn.dataset.index), parseInt(btn.dataset.id));
+    });
+
+    E('editSongList').addEventListener('click', function(ev) {
+        var row = ev.target.closest('.srow');
+        if (!row) return;
+        selectEdit(parseInt(row.dataset.id));
+    });
+
+    E('retryRes').addEventListener('click', function(ev) {
+        var btn = ev.target.closest('[data-action="applyRetry"]');
+        if (!btn) return;
+        applyR(btn);
+    });
+}
+
 async function init() {
+    bindEvents();
     await loadCfg();
     chkSources();
     await loadSongs();
@@ -176,15 +237,15 @@ function render() {
     c.innerHTML = S.songs.map(function(s) {
         var sl = S.sel.has(s.id) ? ' sel' : '';
         var ck = S.sel.has(s.id) ? ' checked' : '';
-        return '<div class="srow' + sl + '" onclick="tgl(' + s.id + ',event)">' +
-            '<input type="checkbox"' + ck + ' onclick="event.stopPropagation();tgl(' + s.id + ')">' +
+        return '<div class="srow' + sl + '" data-id="' + s.id + '">' +
+            '<input type="checkbox"' + ck + '>' +
             '<div class="sinfo"><div class="t">' + esc(s.title || '?') + '</div>' +
             '<div class="u">' + (s.artist || '?') + (s.album ? ' · ' + esc(s.album) : '') + ' · ' + fm(s.duration) + '</div></div></div>';
     }).join('');
     upd();
 }
 
-function tgl(id, ev) { if (ev) ev.stopPropagation(); if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id); render(); }
+function tgl(id) { if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id); render(); }
 function selAll() { S.songs.forEach(function(s) { S.sel.add(s.id); }); render(); }
 function selNone() { S.sel.clear(); render(); }
 
@@ -200,9 +261,9 @@ function upd() {
 function ids() { return Array.from(S.sel); }
 
 function switchTab(name) {
-    document.querySelectorAll('.tab-content').forEach(function(e) { e.classList.remove('on'); });
-    document.querySelectorAll('.tabs button').forEach(function(b) { b.classList.toggle('on', b.dataset.tab === name); });
-    E('tab-' + name).classList.add('on');
+    document.querySelectorAll('.tab-content').forEach(function(e) { e.classList.remove('active'); });
+    document.querySelectorAll('.tab-item').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === name); });
+    E('tab-' + name).classList.add('active');
     if (name === 'edit') loadEditView();
 }
 
@@ -391,7 +452,7 @@ function renderFailed() {
         return '<div class="erow"><div class="sinfo"><div class="t">' + esc(tit) + '</div>' +
             '<div class="u">' + esc(art) + ' · ' + esc(f.reason || '') + '</div></div>' +
             '<input id="fk_' + i + '" placeholder="关键词" value="' + escH(art) + ' ' + escH(tit) + '">' +
-            '<button class="btn btn-sm btn-s" onclick="retryFailed(' + i + ',' + f.id + ')">' +
+            '<button class="btn btn-sm btn-s" data-action="retry" data-index="' + i + '" data-id="' + f.id + '">' +
             '<span class="material-symbols-outlined">search</span></button></div>';
     }).join('');
 }
@@ -415,7 +476,7 @@ function loadEditView() {
     }
     c.innerHTML = songs.map(function(s) {
         var sl = S_editId === s.id ? ' sel' : '';
-        return '<div class="srow' + sl + '" onclick="selectEdit(' + s.id + ')" style="cursor:pointer">' +
+        return '<div class="srow' + sl + '" data-id="' + s.id + '" style="cursor:pointer">' +
             '<div class="sinfo"><div class="t">' + esc(s.title || '?') + '</div>' +
             '<div class="u">' + esc(s.artist || '?') + (s.album ? ' · ' + esc(s.album) : '') + ' · ' + fm(s.duration) + '</div></div></div>';
     }).join('');
@@ -548,8 +609,8 @@ async function doRetry() {
         var sc = d.sourceScores ? Object.entries(d.sourceScores).map(function(e) { return e[0] + ':' + e[1].toFixed(2); }).join(', ') : '';
         E('retryRes').innerHTML = '<div style="padding:8px"><b>' + esc(d.artist) + ' - ' + esc(d.title) + '</b><br>album: ' + esc(d.album || '') +
             '<br>src: ' + d.source + ' (' + d.score.toFixed(2) + ')<br>' + sc +
-            '<br><button class="btn btn-sm btn-p" data-art="' + escH(d.artist) + '" data-tit="' + escH(d.title) + '" data-alb="' + escH(d.album || '') +
-            '" data-sid="' + id + '" onclick="applyR(this)" style="margin-top:4px"><span class="material-symbols-outlined">check</span> write</button></div>';
+            '<br><button class="btn btn-sm btn-p" data-action="applyRetry" data-art="' + escH(d.artist) + '" data-tit="' + escH(d.title) + '" data-alb="' + escH(d.album || '') +
+            '" data-sid="' + id + '" style="margin-top:4px"><span class="material-symbols-outlined">check</span> write</button></div>';
     } catch (e) { E('retryRes').innerHTML = '<div class="log e">' + e.message + '</div>'; }
 }
 
