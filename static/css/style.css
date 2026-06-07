@@ -227,3 +227,4 @@ html[data-theme="dark"] .srow.sel { background: rgba(199,191,255,0.12); }
 @media (max-width: 600px) {
     .sgrid { grid-template-columns: 1fr; }
 }
+.sep{width:1px;height:20px;background:var(--md-outline);display:inline-block;vertical-align:middle;margin:0 4px}

@@ -325,25 +325,27 @@ function stopBatch() {
     setP(false, 100);
     E('ptxt').textContent = '';
     E('btnStop').disabled = true;
+    E('btnForce').disabled = false;
     log('batch stopped');
 }
 
-async function batch() {
+async function batch(force) {
     if (S.busy) return;
     stopBatch();
     var is = ids();
     if (!is.length) { toast('select first'); return; }
     S.busy = true;
     E('btnStop').disabled = false;
+    if (E('btnForce')) E('btnForce').disabled = true;
     setP(true, 0);
     var t = is.length;
     E('ptxt').textContent = '0/' + t;
     try {
-        var r = await af('./scrape/batch', { method: 'POST', body: JSON.stringify({ ids: is }) });
+        var r = await af('./scrape/batch', { method: 'POST', body: JSON.stringify({ ids: is, force: !!force }) });
         var d = await r.json();
         if (d.error) { log('batch err:' + d.error, 'e'); stopBatch(); return; }
         var taskId = d.taskId;
-        log('batch started: ' + t + ' songs, taskId=' + taskId + ', already done skipped');
+        log('batch started: ' + t + ' songs, taskId=' + taskId + (force ? ' (强制)' : '') + ', already done skipped');
         localStorage.setItem('batchTaskId', taskId);
         localStorage.setItem('batchTotal', t);
         S._loggedCnt = -1;
@@ -370,6 +372,7 @@ async function batch() {
                     setP(true, 100);
                     E('ptxt').textContent = '';
                     E('btnStop').disabled = true;
+                    if (E('btnForce')) E('btnForce').disabled = false;
                     var doneLogs = 0;
                     (pd.results || []).forEach(function(r) {
                         if (S._loggedCnt === undefined || doneLogs >= S._loggedCnt) {
@@ -425,6 +428,45 @@ function renderFailed() {
             '<button class="btn btn-sm btn-s" data-action="retry" data-index="' + i + '" data-id="' + f.id + '">' +
             '<span class="material-symbols-outlined">search</span></button></div>';
     }).join('');
+}
+
+async function clearScraped() {
+    if (S.busy) return;
+    if (!confirm('确定要清除所有刮削记录吗？\n清除后所有歌曲都可重新刮削。')) return;
+    try {
+        var r = await af('./storage/scraped', { method: 'DELETE' });
+        if (r.ok) { toast('已清除刮削记录'); } else { toast('清除失败'); }
+    } catch (e) { log('clearScraped err:' + e.message, 'e'); toast('错误'); }
+}
+
+async function dlCover() {
+    if (S.busy) return;
+    var is = ids();
+    if (!is.length) { toast('请先选择歌曲'); return; }
+    S.busy = true; setP(true, 0);
+    var total = is.length, ok = 0, skip = 0, fail = 0;
+    try {
+        for (var i = 0; i < is.length; i++) {
+            var id = is[i];
+            var s = findSong(id);
+            if (!s) { skip++; log('skip #' + id + ': 歌曲未找到'); continue; }
+            var cu = s.cover_url || '';
+            if (!cu) { skip++; log('skip #' + id + ': 无封面'); continue; }
+            if (cu.indexOf('/api/') === 0) { skip++; log('skip #' + id + ': 封面已在本地'); continue; }
+            if (s.type && s.type !== 'local') { skip++; log('skip #' + id + ': 非本地歌曲'); continue; }
+            setP(true, Math.round((i + 1) / total * 100));
+            try {
+                var r = await af('./tags/' + id, { method: 'PUT', body: JSON.stringify({ cover_url: cu }) });
+                var d = await r.json();
+                if (d.error) { log('封面下载失败 #' + id + ': ' + d.error, 'e'); fail++; }
+                else { ok++; log('封面已下载 #' + id + ' ' + esc(s.artist) + ' - ' + esc(s.title)); }
+            } catch (e2) { log('封面下载异常 #' + id + ': ' + e2.message, 'e'); fail++; }
+            await sleep(300);
+        }
+        await loadSongs();
+        toast('封面: ok' + ok + ' skip' + skip + ' fail' + fail);
+    } catch (e) { log('dlCover err:' + e.message, 'e'); }
+    S.busy = false; setP(false, 100);
 }
 
 function findSong(id) {
@@ -506,18 +548,12 @@ async function saveEditPanel() {
 }
 
 async function scrapeEdit() {
+    if (S.busy) return;
     if (!S_editId) return;
-    try {
-        var r = await af('./scrape/' + S_editId, { method: 'POST' });
-        var d = await r.json();
-        if (d.error) { log('刮削失败: ' + d.error, 'e'); toast('刮削失败'); }
-        else {
-            var st = d.fileWriteStatus === 'written' ? '写入成功' : d.fileWriteStatus === 'skipped' ? '已是最新' : '写入失败';
-            log('刮削成功: ' + d.artist + ' - ' + d.title + ' | ' + d.source + ' | ' + st);
-            selectEdit(S_editId);
-            toast(st);
-        }
-    } catch (e) { log('刮削出错:' + e.message, 'e'); toast('刮削出错'); }
+    S.busy = true; setP(true, 0);
+    var d = await _sc(S_editId);
+    S.busy = false; setP(false, 100);
+    if (d) { selectEdit(S_editId); toast('done'); }
 }
 
 function setP(s, p) {

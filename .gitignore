@@ -5,3 +5,8 @@ _build.js
 _install.js
 _repack.js
 _fullbuild.js
+
+AGENTS.md
+reasonix.toml
+tmp_*
+.codegraph/
