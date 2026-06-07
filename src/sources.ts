@@ -6,6 +6,26 @@
 
 import { scoreMatch } from './scoring';
 
+// ---- SSRF 防护：内网地址拦截 ----
+// 提取 URL 中的 hostname（纯字符串解析，不依赖 URL 构造函数）
+function extractHostname(url: string): string {
+  const m = url.match(/^https?:\/\/([^\/:?#]+)/);
+  return m ? m[1].toLowerCase() : '';
+}
+
+// 内网/保留地址匹配（正则，无需 DNS）
+const BLOCKED_HOSTNAME = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1|0:0:0:0:0:0:0:1)$/;
+const BLOCKED_IP_RANGE = /^(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+)$/;
+
+function isHostnameAllowed(url: string): boolean {
+  if (!/^https?:\/\//.test(url)) return false;          // 仅允许 HTTP(S)
+  const host = extractHostname(url);
+  if (!host) return false;                               // 空 host 拒绝
+  if (BLOCKED_HOSTNAME.test(host)) return false;         // localhost / 127.x / ::1 / 0.0.0.0
+  if (BLOCKED_IP_RANGE.test(host)) return false;         // 10.x / 172.16-31 / 192.168 / 169.254
+  return true;
+}
+
 // ---- 配置接口 ----
 export interface ScraperConfig {
   enable_acoustid: boolean;
@@ -128,7 +148,7 @@ async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; 
 
 // ---- 网易云音乐 ----
 export async function searchNetease(keyword: string, apiUrl: string): Promise<SearchResult[]> {
-  if (!apiUrl) return [];
+  if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
     const resp = await fetch(apiUrl, {
       method: 'POST',
@@ -160,7 +180,7 @@ export async function searchNetease(keyword: string, apiUrl: string): Promise<Se
 
 // ---- QQ 音乐 ----
 export async function searchQQMusic(keyword: string, apiUrl: string): Promise<SearchResult[]> {
-  if (!apiUrl) return [];
+  if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
     const resp = await fetch(
       `${apiUrl}?w=${encodeURIComponent(keyword)}&format=json&n=3`,
@@ -192,7 +212,7 @@ export async function searchQQMusic(keyword: string, apiUrl: string): Promise<Se
 
 // ---- 酷狗音乐 ----
 export async function searchKuGou(keyword: string, apiUrl: string): Promise<SearchResult[]> {
-  if (!apiUrl) return [];
+  if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
     const resp = await fetch(
       `${apiUrl}?keyword=${encodeURIComponent(keyword)}&page=1&pagesize=3`,

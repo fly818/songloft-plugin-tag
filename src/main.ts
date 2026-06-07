@@ -6,6 +6,17 @@ import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './so
 
 const router = createRouter();
 
+// ---- SSRF 防护：内网地址拦截 ----
+function isBadHost(url: string): boolean {
+  if (!/^https?:\/\//.test(url)) return true;
+  const m = url.match(/^https?:\/\/([^\/:?#]+)/);
+  if (!m) return true;
+  const h = m[1].toLowerCase();
+  if (/^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1)$/.test(h)) return true;
+  if (/^(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+)$/.test(h)) return true;
+  return false;
+}
+
 // 异步批量任务状态
 const batchTasks = new Map<string, {
   ids: number[];
@@ -104,6 +115,21 @@ router.put('/config', async (req) => {
     merged.enable_qqmusic  = !!(merged.qqmusic_api_url);
     merged.enable_kugou    = !!(merged.kugou_api_url);
 
+    if (merged.netease_api_url && isBadHost(merged.netease_api_url)) {
+      songloft.log.warn('[ssrf] 拦截内网 URL: ' + merged.netease_api_url);
+      return jsonResponse({ error: 'URL 不允许：netease_api_url 指向内网地址' }, 400);
+    }
+    if (merged.qqmusic_api_url && isBadHost(merged.qqmusic_api_url)) {
+      return jsonResponse({ error: 'URL 不允许：qqmusic_api_url 指向内网地址' }, 400);
+    }
+    if (merged.kugou_api_url && isBadHost(merged.kugou_api_url)) {
+      return jsonResponse({ error: 'URL 不允许：kugou_api_url 指向内网地址' }, 400);
+    }
+
+    // 清理可能被污染的存储（防止 {status, config} 响应体被写入 config）
+    delete merged['status'];
+    delete merged['config'];
+
     await saveConfig(merged);
     return jsonResponse({ status: 'ok', config: merged });
   } catch (e: any) {
@@ -134,7 +160,7 @@ router.get('/config/status', async (_req) => {
   }
 
   // 网易云
-  if (cfg.enable_netease) {
+  if (cfg.enable_netease && !isBadHost(cfg.netease_api_url)) {
     probes.push((async () => {
       try {
         const resp = await fetch(cfg.netease_api_url, {
@@ -150,7 +176,7 @@ router.get('/config/status', async (_req) => {
   }
 
   // QQ音乐
-  if (cfg.enable_qqmusic) {
+  if (cfg.enable_qqmusic && !isBadHost(cfg.qqmusic_api_url)) {
     probes.push((async () => {
       try {
         const resp = await fetch(
@@ -165,7 +191,7 @@ router.get('/config/status', async (_req) => {
   }
 
   // 酷狗
-  if (cfg.enable_kugou) {
+  if (cfg.enable_kugou && !isBadHost(cfg.kugou_api_url)) {
     probes.push((async () => {
       try {
         const resp = await fetch(
