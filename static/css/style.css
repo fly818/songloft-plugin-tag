@@ -2,87 +2,8 @@
 
 body { font-size: 14px; }
 
-/* AppBar */
-.app-bar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 56px;
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    z-index: 100;
-    box-shadow: var(--md-shadow-2);
-}
-.app-bar h1 { font-size: 18px; font-weight: 500; letter-spacing: .25px; }
-.app-bar .material-symbols-outlined { font-size: 20px; }
-.app-bar .btn-icon {
-    margin-left: auto;
-    width: 40px; height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--md-on-primary);
-    border-radius: 50%;
-    cursor: pointer;
-}
-.app-bar .btn-icon:hover { background: rgba(255,255,255,.15); }
-
-/* Tab Bar (Bottom Navigation) */
-.tab-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    display: flex;
-    height: 64px;
-    background: var(--md-surface);
-    z-index: 99;
-    border-top: 1px solid var(--md-outline-variant);
-    padding-bottom: env(safe-area-inset-bottom);
-    box-sizing: content-box;
-}
-.tab-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 16px;
-    border: none;
-    background: transparent;
-    color: var(--md-on-surface-variant);
-    font-size: 12px;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    position: relative;
-    transition: color .2s;
-    letter-spacing: .4px;
-}
-.tab-item .material-symbols-outlined { font-size: 22px; }
-.tab-item::after {
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    width: 64px;
-    height: 32px;
-    background: var(--md-primary-container);
-    border-radius: 16px;
-    z-index: -1;
-    transition: transform .2s;
-}
-.tab-item.active { color: var(--md-primary); }
-.tab-item.active::after { transform: translateX(-50%) scaleX(1); }
-.tab-item:hover:not(.active) { background: rgba(99,102,241,.06); }
-
-/* Tab Content */
-.tab-content { display: none; padding-top: 72px; padding-bottom: 80px; min-height: 100vh; }
-.tab-content.active { display: block; }
+/* AppBar — 基础样式由 common.css 提供，这里仅补充刷新按钮定位 */
+.app-bar .btn-icon { margin-left: auto; }
 
 /* Container */
 .ctn { max-width: 960px; margin: 0 auto; padding: 0 16px; }
