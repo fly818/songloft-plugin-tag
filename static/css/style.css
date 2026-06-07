@@ -8,14 +8,7 @@ body { font-size: 14px; }
 /* Container */
 .ctn { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 
-/* Card */
-.card {
-    background: var(--md-surface-1);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: var(--md-shadow-1);
-}
+/* Card — 基础样式由 common.css 提供，这里仅补充 h3 标题 */
 .card h3 {
     font-size: 13px;
     color: var(--md-on-surface-variant);
