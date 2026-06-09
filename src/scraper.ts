@@ -281,3 +281,70 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * 清除歌曲中已嵌入的封面（解决老版本 base64 损坏封面无法覆盖的问题）
+ * 传全部标签字段 + cover_url="" 强制 Go 后端重写，绕过 tagsUnchanged 检测
+ */
+export async function clearCover(songId: number): Promise<string> {
+  try {
+    const token = await songloft.plugin.getToken();
+    const hostUrl = await songloft.plugin.getHostUrl();
+
+    // 先获取当前歌曲元数据
+    const getResp = await fetch(`${hostUrl}/api/v1/songs/${songId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!getResp.ok) {
+      songloft.log.error(`[scraper] 清除封面前获取歌曲信息失败 (HTTP ${getResp.status})`);
+      return 'failed';
+    }
+    const song = await getResp.json();
+
+    // 获取歌词内容
+    let lyrics = '';
+    if (song.lyric_url) {
+      try {
+        const lr = await fetch(`${hostUrl}${song.lyric_url}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (lr.ok) {
+          const raw = await lr.text();
+          try { lyrics = JSON.parse(raw).lyric || raw; } catch { lyrics = raw; }
+        }
+      } catch { /* ignore */ }
+    }
+
+    // 传全部字段 + cover_url="" 强制全量重写（绕过 tagsUnchanged）
+    const body: Record<string, string> = {
+      title: song.title || '',
+      artist: song.artist || '',
+      album: song.album || '',
+      lyrics: lyrics,
+      cover_url: '',
+    };
+
+    const resp = await fetch(`${hostUrl}/api/v1/songs/${songId}/tags`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      songloft.log.error(`[scraper] 封面清除失败 (HTTP ${resp.status}): ${errText}`);
+      return 'failed';
+    }
+
+    const data = await resp.json();
+    const fileWrite = data.file_write || 'unknown';
+    songloft.log.info(`[scraper] 封面已清除: songId=${songId} (file=${fileWrite})`);
+    return fileWrite;
+  } catch (e: any) {
+    songloft.log.error(`[scraper] 封面清除异常: ${e.message || e}`);
+    return 'failed';
+  }
+}

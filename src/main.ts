@@ -1,7 +1,7 @@
 /// <reference types="@songloft/plugin-sdk" />
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
 import { toSimplified } from './t2s';
-import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, type ScrapeResult } from './scraper';
+import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, clearCover, type ScrapeResult } from './scraper';
 import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './sources';
 
 const router = createRouter();
@@ -9,10 +9,11 @@ const router = createRouter();
 // ---- SSRF 防护：内网地址拦截 ----
 function isBadHost(url: string): boolean {
   if (!/^https?:\/\//.test(url)) return true;
-  const m = url.match(/^https?:\/\/([^\/:?#]+)/);
+  // 支持 IPv6 方括号地址（如 http://[::1]/）
+  const m = url.match(/^https?:\/\/(?:\[([^\]]+)\]|([^\/:?#]+))/);
   if (!m) return true;
-  const h = m[1].toLowerCase();
-  if (/^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1)$/.test(h)) return true;
+  const h = (m[1] || m[2]).toLowerCase();
+  if (/^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1|0:0:0:0:0:0:0:1|\[::1\]|\[0:0:0:0:0:0:0:1\])$/i.test(h)) return true;
   if (/^(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+)$/.test(h)) return true;
   return false;
 }
@@ -334,6 +335,19 @@ router.post('/scrape/preview/:id', async (req, params) => {
   return jsonResponse(result);
 });
 
+// 清除歌曲中已嵌入的封面（解决老版本损坏封面无法覆盖的问题）
+router.post('/cover/clear/:id', async (req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
+
+  songloft.log.info(`[api] 清除封面: songId=${songId}`);
+  const result = await clearCover(songId);
+  if (result === 'failed') {
+    return jsonResponse({ error: '封面清除失败', songId }, 500);
+  }
+  return jsonResponse({ status: 'ok', file_write: result, songId });
+});
+
 // ============================================================
 // 单曲详情（编辑页用）
 // ============================================================
@@ -421,7 +435,7 @@ router.get('/songs', async (req) => {
     const query = req.query || '';
     const params = new URLSearchParams(query);
     const keyword = params.get('q') || '';
-    const limit = parseInt(params.get('limit') || '50', 10);
+    const limit = parseInt(params.get('limit') || '10000', 10);
     const offset = parseInt(params.get('offset') || '0', 10);
 
     let songs;
@@ -431,7 +445,6 @@ router.get('/songs', async (req) => {
       songs = await songloft.songs.list({ limit, offset });
     }
 
-    // 转换为前端友好的格式
     const items = songs.map((s: any) => ({
       id: s.id,
       title: s.title || '',

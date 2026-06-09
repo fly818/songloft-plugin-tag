@@ -138,7 +138,6 @@ export const SOURCE_WEIGHTS: Record<string, number> = {
   netease: 1.0,
   qqmusic: 0.95,
   kugou: 0.85,
-  discogs: 0.8,
 };
 
 /**
@@ -167,7 +166,7 @@ export function scoreMatch(
 /**
  * 判定分数是否达标
  */
-export const SCORE_THRESHOLD = 0.8;
+export const SCORE_THRESHOLD = 0.7;
 
 export function isScoreAcceptable(score: number): boolean {
   return score >= SCORE_THRESHOLD;

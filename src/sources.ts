@@ -30,13 +30,14 @@ function utf8Decode(bytes: string): string {
 
 // ---- SSRF 防护：内网地址拦截 ----
 // 提取 URL 中的 hostname（纯字符串解析，不依赖 URL 构造函数）
+// 支持 IPv6 方括号地址（如 http://[::1]/）
 function extractHostname(url: string): string {
-  const m = url.match(/^https?:\/\/([^\/:?#]+)/);
-  return m ? m[1].toLowerCase() : '';
+  const m = url.match(/^https?:\/\/(?:\[([^\]]+)\]|([^\/:?#]+))/);
+  return m ? (m[1] || m[2]).toLowerCase() : '';
 }
 
 // 内网/保留地址匹配（正则，无需 DNS）
-const BLOCKED_HOSTNAME = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1|0:0:0:0:0:0:0:1)$/;
+const BLOCKED_HOSTNAME = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|::1|0:0:0:0:0:0:0:1)$/i;
 const BLOCKED_IP_RANGE = /^(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+)$/;
 
 function isHostnameAllowed(url: string): boolean {
@@ -46,6 +47,27 @@ function isHostnameAllowed(url: string): boolean {
   if (BLOCKED_HOSTNAME.test(host)) return false;         // localhost / 127.x / ::1 / 0.0.0.0
   if (BLOCKED_IP_RANGE.test(host)) return false;         // 10.x / 172.16-31 / 192.168 / 169.254
   return true;
+}
+
+// ---- 指数退避重试（弱网减少失败率）----
+async function fetchWithRetry(
+  url: string,
+  init?: any,
+  retries = 2,
+  baseDelay = 1000
+): Promise<{ resp: any; ok: boolean }> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url, init);
+      return { resp, ok: true };
+    } catch (e: any) {
+      if (i === retries) return { resp: null, ok: false };
+      const delay = baseDelay * Math.pow(2, i);
+      songloft.log.info(`[retry] ${delay}ms 后重试 (${i + 1}/${retries + 1}): ${e.message || e}`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  return { resp: null, ok: false };
 }
 
 // ---- 配置接口 ----
@@ -98,9 +120,11 @@ export async function searchAcoustid(fingerprint: string, duration: number, apiK
   try {
     const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(duration)}&fingerprint=${encodeURIComponent(fingerprint)}&meta=recordingids`;
 
-    const resp = await fetch(`https://api.acoustid.org/v2/lookup?${qs}`, {
+    const rt = await fetchWithRetry(`https://api.acoustid.org/v2/lookup?${qs}`, {
       headers: { 'User-Agent': 'songloft-plugin-tag/1.0' },
     });
+    if (!rt.ok) return [];
+    const resp = rt.resp;
 
     if (resp.status === 429) {
       songloft.log.warn('[acoustid] 限流，降级到文本搜索');
@@ -137,10 +161,12 @@ export async function searchAcoustid(fingerprint: string, duration: number, apiK
 
 async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; title: string; album: string } | null> {
   try {
-    const resp = await fetch(
+    const rt = await fetchWithRetry(
       `https://musicbrainz.org/ws/2/recording/${recordingId}?inc=artists+releases&fmt=json`,
       { headers: { 'User-Agent': 'songloft-plugin-tag/1.0' } }
     );
+    if (!rt.ok) return null;
+    const resp = rt.resp;
     if (!resp.ok) return null;
 
     const mb = await resp.json();
@@ -172,7 +198,7 @@ async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; 
 export async function searchNetease(keyword: string, apiUrl: string): Promise<SearchResult[]> {
   if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
-    const resp = await fetch(apiUrl, {
+    const rt = await fetchWithRetry(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -181,6 +207,8 @@ export async function searchNetease(keyword: string, apiUrl: string): Promise<Se
       },
       body: 's=' + encodeURIComponent(keyword) + '&type=1&limit=3',
     });
+    if (!rt.ok) return [];
+    const resp = rt.resp;
     if (!resp.ok) return [];
 
     const data = await resp.json();
@@ -204,7 +232,7 @@ export async function searchNetease(keyword: string, apiUrl: string): Promise<Se
 export async function searchQQMusic(keyword: string, apiUrl: string): Promise<SearchResult[]> {
   if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
-    const resp = await fetch(
+    const rt = await fetchWithRetry(
       `${apiUrl}?w=${encodeURIComponent(keyword)}&format=json&n=3`,
       {
         headers: {
@@ -213,6 +241,8 @@ export async function searchQQMusic(keyword: string, apiUrl: string): Promise<Se
         },
       }
     );
+    if (!rt.ok) return [];
+    const resp = rt.resp;
     if (!resp.ok) return [];
 
     const data = await resp.json();
@@ -236,10 +266,12 @@ export async function searchQQMusic(keyword: string, apiUrl: string): Promise<Se
 export async function searchKuGou(keyword: string, apiUrl: string): Promise<SearchResult[]> {
   if (!apiUrl || !isHostnameAllowed(apiUrl)) return [];
   try {
-    const resp = await fetch(
+    const rt = await fetchWithRetry(
       `${apiUrl}?keyword=${encodeURIComponent(keyword)}&page=1&pagesize=3`,
       { headers: { 'User-Agent': 'Mozilla/5.0' } }
     );
+    if (!rt.ok) return [];
+    const resp = rt.resp;
     if (!resp.ok) return [];
 
     const data = await resp.json();
@@ -440,20 +472,42 @@ function sleep(ms: number): Promise<void> {
 }
 
 // ---- 辅助：从文件名提取候选标签 ----
+// CD 翻录歌曲常见垃圾元数据：优先用文件名
+const GARBAGE_TITLE = /^(?:trad|track|unknown|audio\s*track|cd\s*track|data\s*track|\d+)$/i;
+const GARBAGE_ARTIST = /^(?:unknown|various|未知|佚名)$/i;
+
 export function extractCandidate(filePath: string, existingTags?: { artist?: string; title?: string }): { artist: string; title: string } {
-  // 优先用已有标签
+  // 清洗 DB 元数据
   if (existingTags?.artist && existingTags?.title) {
-    return { artist: existingTags.artist, title: existingTags.title };
+    const art = cleanFilenameNoise(existingTags.artist);
+    const tit = cleanFilenameNoise(existingTags.title);
+    // CD 翻录的垃圾元数据（如标题是"Track 01"、"trad 1"），退回到文件名提取
+    if (!GARBAGE_TITLE.test(tit) && !GARBAGE_ARTIST.test(art)) {
+      return { artist: art, title: tit };
+    }
   }
 
   // 从文件名提取 "艺术家 - 歌名" 模式
-  const fileName = filePath.replace(/^.*[/\\]/, '').replace(/\.[^.]+$/, '');
+  const fileName = cleanFilenameNoise(
+    filePath.replace(/^.*[/\\]/, '').replace(/\.[^.]+$/, '')
+  );
+
   const match = fileName.match(/^(.+?)\s*-\s*(.+?)(?:\s*\(.*?\))?\s*$/);
   if (match) {
-    return { artist: match[1].trim(), title: match[2].trim() };
+    return { artist: cleanFilenameNoise(match[1]), title: cleanFilenameNoise(match[2]) };
   }
 
   return { artist: '', title: fileName };
+}
+
+/** 剥离音质/版本标签，提高搜索匹配率 */
+function cleanFilenameNoise(s: string): string {
+  return s
+    .replace(/\[(?:FLAC|MP3|WAV|APE|WMA|OGG|320k?|128k?|192k?|256k?|HQ|SQ|Hi[-\s]?Res|无损|高音质|MV)\]/gi, '')
+    .replace(/\((?:Live|Remix|Cover|伴奏|纯音乐|Instrumental|Acoustic|Demo|Bonus\s?Track)\)/gi, '')
+    .replace(/\s*(?:feat\.?|ft\.?)\s*.+?(?:\s*[-–—]\s*|$)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // ---- 从配置读取/保存 ----
