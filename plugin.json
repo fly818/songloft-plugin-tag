@@ -11,7 +11,7 @@
     "songs.read"
   ],
   "entryHash": "481505ac5ccf1b5be64a7cf06fe0a2b15b851fbb7cd551df3c08ab2ac2aff3fe",
-  "zipHash": "49d9f73c91f67446a93bcf5c91c71fc80649769cdce79bff8b1eb6581c5ec3a7",
+  "zipHash": "9435a11c22dc9a4699695bfa2d4235cff5d8f01d51d25f44d0ea7de52e887033",
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/plugin.json",
   "download_url": "https://github.com/songloft-org/songloft-plugin-tag/releases/download/v1.0.6/tag.jsplugin.zip"
 }
