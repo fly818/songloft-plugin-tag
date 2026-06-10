@@ -67,7 +67,32 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 .tr-n:hover{background:rgba(255,255,255,0.04)}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--sv);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:block}
-@media(max-width:600px){.sgrid{grid-template-columns:1fr}}
+@media(max-width:600px){
+  .sgrid{grid-template-columns:1fr}
+  .ctn{max-width:100%;padding:8px}
+  .card{padding:12px;border-radius:12px;margin-bottom:8px}
+  .hdr{padding:8px 10px;gap:4px}
+  .hdr h1{font-size:14px}
+  .tabs button{padding:4px 10px;font-size:11px}
+  .slist{max-height:40vh}
+  .tbar{justify-content:flex-start}
+  .tbar button{padding:3px 10px;font-size:11px}
+  #tree{width:120px;min-width:100px;font-size:12px;line-height:1.8}
+  .srch input{font-size:13px;padding:8px 12px}
+  .srow{padding:8px 10px;gap:6px}
+  .sinfo .t{font-size:13px}
+  .log{max-height:100px}
+}
+@media(max-width:400px){
+  .hdr{flex-direction:column;align-items:flex-start}
+  .hdr h1{margin-bottom:4px}
+  #btnTree{display:inline-flex!important}
+  #tree{position:absolute;z-index:10;background:var(--s);width:180px;max-height:50vh;overflow-y:auto;left:8px;top:36px;border:1px solid var(--sv);border-radius:8px;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+  #tree.open{display:block}
+  .tbar button{padding:2px 8px;font-size:10px;gap:2px}
+  .srch{flex-wrap:nowrap}
+  .btn{font-size:12px;padding:8px 16px}
+}
 </style></head><body>
 <div class="hdr">
 <h1><span class=mi><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span> 标签刮削 <span style="font-size:11px;color:var(--osv);font-weight:400">v1.0.6</span></h1>
@@ -79,17 +104,38 @@ body{font-family:system-ui,sans-serif;background:var(--s);color:var(--os);font-s
 <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:none" onclick="loadSongs()"><span class=mi><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></span></button>
 </div>
 <div class="ctn"><div class="tab-content on" id="tab-songs">
-<div class="card"><h3>文件管理</h3>
-<div class="srch"><input id="q" placeholder="搜索..." onkeydown="if(event.key==='Enter')search()"><button class="btn btn-sm btn-s" onclick="search()"><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span></button></div>
-<div id="crumb" style="font-size:12px;color:var(--osv);padding:4px 0;display:none"></div>
-<div style="display:flex;gap:8px;flex:1;min-height:300px;max-height:calc(100vh - 260px)">
-<div id="tree" style="width:220px;min-width:150px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--sv);padding-right:4px;font-size:13px;line-height:2;resize:horizontal"></div>
+<div class="card" style="padding:0;overflow:hidden">
+<div style="padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--sv)">
+<input id="q" placeholder="搜索..." onkeydown="if(event.key==='Enter')search()" style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--ol);font-size:13px;outline:none;background:#2B2930;color:var(--os)">
+<button class="btn btn-sm btn-s" onclick="search()"><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span></button>
+<button class="btn btn-sm btn-s" id="btnTree" onclick="toggleTree()" style="display:none">☰</button>
+</div>
+<div id="crumb" style="font-size:11px;color:var(--osv);padding:2px 12px;border-bottom:1px solid var(--sv);display:none"></div>
+<div style="display:flex;flex:1;min-height:400px;max-height:calc(100vh - 240px)" id="fileManager">
+<div id="tree" style="width:200px;min-width:120px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--sv);padding:8px 6px;font-size:12px;line-height:2;resize:horizontal;flex-shrink:0"></div>
 <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
-<div class="tbar"><button onclick="showAll()" id="btnAllSongs"><span class=mi><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3zm0 7h18v2H3zm0 7h18v2H3z"/></svg></span> 全部歌曲</button><button onclick="selAll()"><span class=mi><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span> 全选</button><button onclick="selNone()"><span class=mi><svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></span> 清空</button><button onclick="clearScraped()"><span class=mi><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></span> 清空记录</button><span class=sep></span><button onclick="dlCover()" id="btnDlCover" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span> 下载封面</button><button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面（需主程序 v2.7.1+ 支持，当前版本清除后重刮即可覆盖）"><span class=mi><svg viewBox="0 0 24 24"><path d="M21 3H3v18h18V3zm-5 11H8v-2h8v2z"/></svg></span> 清除封面</button><button onclick="doScrape()" id="btnScrape" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M3 10h11v2H3zm0-4h11v2H3zm0 8h7v2H3zm13-1v-2l6-6 2 2-6 6h-2zm4-8l-2-2 1.3-1.3c.4-.4 1-.4 1.4 0l.6.6c.4.4.4 1 0 1.4L20 5z"/></svg></span> 刮削</button><button onclick="batchForce()" id="btnForce" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></span> 强制</button><button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class=mi><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></span> 停止</button><button id="btnPrev" onclick="preview()" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span> 预览</button><button class="btn btn-sm btn-s" id="btnInstallFpcalc" style="display:none;margin-left:auto"></button></div>
-<div class="slist" id="list" style="flex:1;overflow-y:auto"></div></div></div></div>
-<div id="selInfo" style="font-size:12px;color:var(--osv);margin-top:8px"></div>
-<div class="pbar" id="pbar" style="display:none"><div class="pfill" id="pfill" style="width:0%"></div></div>
-<div class="ptxt" id="ptxt"></div>
+<div class="tbar" style="padding:4px 8px;border-bottom:1px solid var(--sv);margin:0;gap:4px">
+<button onclick="showAll()" id="btnAllSongs"><span class=mi><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3zm0 7h18v2H3zm0 7h18v2H3z"/></svg></span> 全部歌曲</button>
+<button onclick="selAll()"><span class=mi><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span> 全选</button>
+<button onclick="selNone()"><span class=mi><svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></span> 清空</button>
+<button onclick="clearScraped()"><span class=mi><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></span> 清空记录</button>
+<span class=sep></span>
+<button onclick="dlCover()" id="btnDlCover" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span> 下载封面</button>
+<button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面（需主程序 v2.7.1+ 支持）"><span class=mi><svg viewBox="0 0 24 24"><path d="M21 3H3v18h18V3zm-5 11H8v-2h8v2z"/></svg></span> 清除封面</button>
+<span class=sep></span>
+<button onclick="doScrape()" id="btnScrape" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M3 10h11v2H3zm0-4h11v2H3zm0 8h7v2H3zm13-1v-2l6-6 2 2-6 6h-2zm4-8l-2-2 1.3-1.3c.4-.4 1-.4 1.4 0l.6.6c.4.4.4 1 0 1.4L20 5z"/></svg></span> 刮削</button>
+<button onclick="batchForce()" id="btnForce" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></span> 强制</button>
+<button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class=mi><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></span> 停止</button>
+<button id="btnPrev" onclick="preview()" disabled><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span> 预览</button>
+</div>
+<div class="slist" id="list" style="flex:1;overflow-y:auto"></div>
+</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 12px;border-top:1px solid var(--sv);font-size:11px;color:var(--osv)">
+<span id="selInfo"></span><span id="ptxt" style="color:var(--p)"></span>
+</div>
+<div class="pbar" id="pbar" style="display:none;height:2px;"><div class="pfill" id="pfill" style="width:0%"></div></div>
+</div>
 <div class="card"><h3>日志</h3><div class="log" id="log"><div>就绪</div></div></div>
 <div class="card"><h3>刮削源</h3><div class="sgrid">
 <div class="schip" id="card_acoustid"><div class="st off" id="st_acoustid"></div><div class="nm"><span class=mi><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></span>️ AcoustID</div></div>
@@ -152,10 +198,11 @@ async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config");var
 async function saveCfg(){S.cfg.acoustid_api_key=E("ak").value.trim();S.cfg.netease_api_url=E("nu").value.trim();S.cfg.qqmusic_api_url=E("qu").value.trim();S.cfg.kugou_api_url=E("ku").value.trim();await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();await chkSources();toast("saved")}
 function toggleSrc(s){}
 function uiCfg(){["acoustid","netease","qqmusic","kugou"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s)){st.className="st "+(ss[s]?"on":"off")}else{st.className="st"}});E("cfg_acoustid").style.display="";E("cfg_netease").style.display="";E("cfg_qqmusic").style.display="";E("cfg_kugou").style.display="";E("ak").value=S.cfg.acoustid_api_key||"";E("nu").value=S.cfg.netease_api_url||"";E("qu").value=S.cfg.qqmusic_api_url||"";E("ku").value=S.cfg.kugou_api_url||"";E("cfgPanel").style.display="block"}
-async function loadSongs(kw){try{var u="./songs?limit=10000";if(kw)u+="&q="+encodeURIComponent(kw);var r=await af(u);var d=await r.json();S._allSongs=d.songs||[];S.songs=S._allSongs.slice();S._curPath="";S._musicPrefix="";if(S._allSongs.length){var fp=S._allSongs[0].file_path||"";var parts=fp.split("/");if(parts.length>=3){S._musicPrefix=parts.slice(0,3).join("/")+"/";S._rootName=parts[2]||'全部'}}filterPath()}catch(e){log("songs load err:"+e.message,"e");S.songs=[];S._allSongs=[];render()}}
+async function loadSongs(kw){try{var u="./songs?limit=10000";if(kw)u+="&q="+encodeURIComponent(kw);var r=await af(u);var d=await r.json();S._allSongs=(d.songs||[]).filter(function(s){return !(s.duration>0&&s.duration<30)});S.songs=S._allSongs.slice();S._curPath="";S._musicPrefix="";if(S._allSongs.length){var fp=S._allSongs[0].file_path||"";var parts=fp.split("/");if(parts.length>=3){S._musicPrefix=parts.slice(0,3).join("/")+"/";S._rootName=parts[2]||'全部'}}filterPath()}catch(e){log("songs load err:"+e.message,"e");S.songs=[];S._allSongs=[];render()}}
 function search(){loadSongs(E("q").value.trim()||undefined)}
 function filterPath(){var q=E("q").value.trim().toLowerCase();var prefix=S._musicPrefix+(S._curPath?S._curPath+"/":"");S.songs=S._allSongs.filter(function(s){var fp=s.file_path||"";if(!fp.startsWith(prefix))return false;if(!S._curPath){var rel=fp.substring(prefix.length);if(rel.indexOf("/")>=0)return false}if(q){var ok=((s.title||"")+(s.artist||"")+(s.album||"")).toLowerCase().indexOf(q)>=0;if(!ok&&(s.file_path||"").toLowerCase().indexOf(q)>=0)ok=true;if(!ok)return false}return true});render()}
 function navTo(path){S._curPath=path||"";filterPath()}
+function toggleTree(){var t=E("tree");if(t.classList.contains("open")){t.classList.remove("open")}else{t.classList.add("open")}}
 function showAll(){E("q").value="";S._curPath="";S.songs=S._allSongs.slice();render()}
 function navigate(sub){S._curPath=S._curPath?S._curPath+"/"+sub:sub;filterPath()}
 function render(){renderDirs();var c=E("list");if(!S.songs.length){c.innerHTML="<div style=text-align:center;padding:40px;color:var(--osv)>no songs</div>";return}c.innerHTML=S.songs.map(function(s){var sl=S.sel.has(s.id)?" sel":"";var ck=S.sel.has(s.id)?" checked":"";return"<div class=srow"+sl+" onclick=tgl("+s.id+",event)><input type=checkbox"+ck+" onclick=event.stopPropagation();tgl("+s.id+")><div class=sinfo><div class=t>"+esc(s.title||"?")+"</div><div class=u>"+(s.artist||"?")+(s.album?" · "+esc(s.album):"")+" · "+fm(s.duration)+(s.format?" · "+esc(s.format):"")+"</div></div></div>"}).join("");upd()}
@@ -194,7 +241,7 @@ async function clearCover(){if(S.busy)return;var is=ids();if(!is.length){toast("
 
 async function addFailed(id,reason){if(S.failedSongs.some(function(f){return f.id===id&&f.reason===reason}))return;S.failedSongs.push({id:id,reason:reason,time:new Date().toISOString()});try{await af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)})}catch(e){log("save failed err:"+e.message)}renderFailed()}
 async function loadFailed(){try{var r=await af("./storage/failed");var d=await r.json();S.failedSongs=d||[]}catch(e){S.failedSongs=[]}renderFailed()}
-async function clearFailed(){S.failedSongs=[];try{await af("./storage/failed",{method:"POST",body:"[]"})}catch(e){}renderFailed();toast("cleared")}
+async function clearFailed(){if(!confirm("确定要清空所有失败记录吗？"))return;S.failedSongs=[];try{await af("./storage/failed",{method:"POST",body:"[]"})}catch(e){}renderFailed();toast("cleared")}
 function renderFailed(){var c=E("failedList");if(!S.failedSongs.length){c.innerHTML='<div style=text-align:center;padding:20px;color:var(--osv)>无失败记录</div>';return}c.innerHTML=S.failedSongs.map(function(f,i){var s=findSong(f.id);var art=s?s.artist||"":"?";var tit=s?s.title||"":"?";return'<div class=erow><div class=sinfo><div class=t>'+esc(tit)+'</div><div class=u>'+esc(art)+' · '+esc(f.reason||"")+'</div></div><input id=fk_'+i+' placeholder=关键词 value="'+escH(art)+' '+escH(tit)+'"><button class="btn btn-sm btn-s" onclick="retryFailed('+i+','+f.id+')"><span class=mi><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span></button></div>'}).join("")}
 function findSong(id){var a=S._allSongs||S.songs;for(var i=0;i<a.length;i++){if(a[i].id===id)return a[i]}return null}
 
