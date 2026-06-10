@@ -73,9 +73,9 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--md-surface-variant);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:flex!important;flex:1;overflow:hidden;min-height:0}
 #fileManager{display:flex;flex:1;overflow:hidden;min-height:0}
-#tree{width:240px;min-width:160px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);padding:8px 10px;font-size:12px;line-height:2;flex-shrink:0;background:var(--md-surface-2)}
+#tree{flex:3;min-width:180px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);padding:8px 10px;font-size:12px;line-height:2;flex-shrink:0;background:var(--md-surface-2)}
 #crumb{font-size:11px;color:var(--md-on-surface-variant);padding:4px 0 6px;display:none}
-#rightPane{padding:10px 14px;overflow-y:auto;flex:1;display:flex;flex-direction:column;min-width:0}
+#rightPane{padding:10px 14px;overflow-y:auto;flex:7;display:flex;flex-direction:column;min-width:0}
 #rightPane .slist{flex:1;min-height:0}
 #rightPane .sec{border-top:1px solid var(--md-outline);padding-top:10px;margin-bottom:0}
 #sb{padding:4px 14px;font-size:11px;color:var(--md-on-surface-variant);display:flex;align-items:center;gap:8px;justify-content:space-between;border-top:1px solid var(--md-outline);margin-bottom:8px}
@@ -92,7 +92,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   .tabs .mi{font-size:12px;display:none}
   .ctn{flex-direction:column;overflow:auto;padding:4px}
   #fileManager{flex-direction:column;overflow:visible;min-height:0}
-  #tree{width:100%;min-width:0;max-height:30vh;border-right:none;border-bottom:1px solid var(--md-outline);font-size:12px;line-height:1.8}
+  #tree{width:100%!important;flex:none;min-width:0;max-height:30vh;border-right:none;border-bottom:1px solid var(--md-outline);font-size:12px;line-height:1.8}
   #rightPane{padding:6px 8px;overflow:visible;flex:none}
   .slist{max-height:45vh}
   .tbar{padding:2px 4px!important;gap:3px;flex-wrap:wrap;margin:0}
@@ -301,7 +301,7 @@ function resumeBatch(){var taskId=localStorage.getItem("batchTaskId");if(!taskId
 async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config");var t=await r.text();try{S.cfg=JSON.parse(t);uiCfg();return}catch(e2){if(i<2){await sleep(1000);continue}log("cfg parse err:"+(t.substring(0,80)),"e")}}catch(e){if(i<2){await sleep(1000);continue}log("cfg load err:"+e.message,"e")}}}
 function uiCfg(){["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s)){st.className="st "+(ss[s]?"on":"off")}else{st.className="st"}});E("cfg_acoustid").style.display="";E("cfg_netease").style.display="";E("cfg_qqmusic").style.display="";E("cfg_kugou").style.display="";E("cfg_kuwo").style.display="";E("ak").value=S.cfg.acoustid_api_key||"";E("nu").value=S.cfg.netease_api_url||"";E("qu").value=S.cfg.qqmusic_api_url||"";E("ku").value=S.cfg.kugou_api_url||"";E("kw").value=S.cfg.kuwo_api_url||"https://kuwo.cn";if(E("cfgPanel"))E("cfgPanel").style.display="";syncChips()}
 async function saveCfg(){S.cfg.acoustid_api_key=E("ak").value.trim();S.cfg.netease_api_url=E("nu").value.trim();S.cfg.qqmusic_api_url=E("qu").value.trim();S.cfg.kugou_api_url=E("ku").value.trim();S.cfg.kuwo_api_url=E("kw").value.trim();await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();await chkSources();toast("saved")}
-async function loadSongs(){try{var r=await af("./songs");S._allSongs=await r.json();var q=E("q");var kw=q?q.value.trim().toLowerCase():"";S.songs=kw?S._allSongs.filter(function(s){return(s.title||"").toLowerCase().indexOf(kw)>=0||(s.artist||"").toLowerCase().indexOf(kw)>=0||(s.album||"").toLowerCase().indexOf(kw)>=0}):S._allSongs;render()}catch(e){log("load songs err:"+e.message,"e")}}
+async function loadSongs(){try{var r=await af("./songs");S._allSongs=await r.json();if(!S._musicPrefix&&S._allSongs.length){var fp=S._allSongs[0].file_path||"";var si=fp.indexOf("/");S._musicPrefix=si>0?fp.substring(0,si):"";S._rootName=S._musicPrefix||"全部"};var q=E("q");var kw=q?q.value.trim().toLowerCase():"";S.songs=kw?S._allSongs.filter(function(s){return(s.title||"").toLowerCase().indexOf(kw)>=0||(s.artist||"").toLowerCase().indexOf(kw)>=0||(s.album||"").toLowerCase().indexOf(kw)>=0}):S._allSongs;render()}catch(e){log("load songs err:"+e.message,"e")}}
 function search(){var kw=E("q").value.trim().toLowerCase();S._curPath="";S.songs=kw?S._allSongs.filter(function(s){return(s.title||"").toLowerCase().indexOf(kw)>=0||(s.artist||"").toLowerCase().indexOf(kw)>=0||(s.album||"").toLowerCase().indexOf(kw)>=0}):S._allSongs.slice();render()}
 function switchTab(name){document.querySelectorAll(".tab-content").forEach(function(t){t.classList.remove("on")});var dtop=document.querySelectorAll("#tabs-desktop button");dtop.forEach(function(b){b.classList.toggle("on",b.dataset.tab===name)});var mbl=document.querySelectorAll("#mblWrap button");mbl.forEach(function(b){b.classList.toggle("on",b.dataset.tab===name)});var tc=document.getElementById("tab-"+name);if(tc)tc.classList.add("on");if(name==="edit")loadEditView()}
 function filterPath(){var arr=S._allSongs||[];var p=S._curPath||"";if(!p){S.songs=arr.slice()}else{var prefix=S._musicPrefix+(p?p+"/":"");S.songs=arr.filter(function(s){var fp=s.file_path||"";return fp.indexOf(prefix)===0&&fp.indexOf("/",prefix.length)<0})}render()}
