@@ -4,6 +4,7 @@
 
 ### 新增功能
 - **清除封面**：工具栏新增「清除封面」按钮 + `POST /cover/clear/:id` 端点，批量清除歌曲中已嵌入的损坏封面，解决 v1.0.4 base64 封面损坏后新封面无法覆盖的问题（需主程序 v2.7.1+ 配合，当前版本清除后重刮即可覆盖）
+- **MD3 主题适配 (#14 by @hanxi)**：所有硬编码色值替换为 `--md-*` CSS 变量，亮/暗主题自动跟随。inline SVG 图标替换为 Material Symbols Outlined 图标字体。Header/Tabs 使用 `color-mix()` 生成语义化半透明背景
 - **多级目录浏览**：Songs Tab 全新左窗格目录树 + 面包屑导航，按真实 `file_path` 目录结构递归展开，支持任意层级深度。点击目录节点筛选歌曲，面包屑可回退
 - **全部歌曲按钮**：工具栏新增「全部歌曲」按钮，一键显示所有歌曲（不走目录筛选）
 - **歌曲列表文件格式**：歌曲列表和编辑页显示文件格式（mp3/flac/ape 等），跟在时长后面
@@ -27,7 +28,9 @@
 - **文件管理器布局修复**：清除孤儿 `<div class="ptxt">` 和多余 `</div>` 导致日志/刮削源跑到其他标签页
 
 ### 开发体验
-- Header 新增「📖 README」+「📝 改动日志」按钮，从 GitHub raw 拉取 MD 并弹窗渲染
+- TopBar「刷新」「README」「改动日志」三个按钮统一 Material Symbols 图标（refresh/description/history），尺寸一致
+- 移动端 Header 居中适配（`.hdr` flex-direction:column + `.tabs` margin:0 auto）
+- 版本号显示修复：`--md-on-surface-variant` 在深色 Header 上不可见 → 改用 `opacity:0.6` 继承 on-primary 色
 - 页面 Header 显示当前版本号 v1.0.7
 
 ### 主程序联动
@@ -35,9 +38,11 @@
 - 升级到 v2.7.0（songloft/songloft:tmp-full-amd64）
 
 ### 优化
-- 删除操作栏「📖 说明」按钮（顶栏 README/改动日志按钮保留）
+- 删除操作栏「📖 说明」按钮（顶栏三个按钮保留）
+- 删除 `迭代方向.md` → 合并进 `.reasonix/memory/iteration-direction.md`，仓库不再追踪
 - 删除 `discogs` 无效源权重（未实现、无调用方）
 - AGENTS.md 全面精简 + 合并迭代方向
+- `token()` 优先使用 `SongloftPlugin.getAuthToken()`，保留 localStorage fallback (#14)
 
 ---
 
