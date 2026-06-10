@@ -19,9 +19,8 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 .srch input{flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--md-outline);font-size:13px;outline:none;background:var(--md-surface-2);color:var(--md-on-surface)}
 .srch input:focus{border-color:var(--md-primary)}
 .tbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
-.tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--md-outline);background:var(--md-surface-2);font-size:12px;cursor:pointer;color:var(--md-on-surface)}
+.tbar button{padding:4px 12px;border-radius:8px;border:1px solid var(--md-outline);background:var(--md-surface-2);font-size:12px;cursor:pointer;color:var(--md-on-surface)}
 .tbar button:active{background:var(--md-primary-container)}
-.tbar .mi{font-size:18px}
 .sep{width:1px;height:20px;background:var(--md-surface-variant);display:inline-block;vertical-align:middle;margin:0 2px}
 .slist{overflow-y:auto}
 .srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:10px;cursor:pointer;color:var(--md-on-surface)}
@@ -75,10 +74,10 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--md-surface-variant);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:flex!important;flex:1;overflow:hidden;min-height:0}
 #fileManager{display:flex;flex:1;overflow:hidden;min-height:0}
-#colLeft{flex:0 0 260px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);background:var(--md-surface-2);display:flex;flex-direction:column}
+#colLeft{flex:2;min-width:140px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);background:var(--md-surface-2);display:flex;flex-direction:column}
 #colLeft .colHead{padding:6px 10px;font-size:11px;color:var(--md-on-surface-variant);border-bottom:1px solid var(--md-outline);flex-shrink:0}
 #tree{padding:8px 10px;font-size:12px;line-height:2;overflow-y:auto;flex:1}
-#colMid{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+#colMid{flex:6;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 #colMidTop{padding:8px 12px 0;flex-shrink:0}
 #colMidTop .tbar{margin-bottom:4px}
 #colMidTop .srch{margin-bottom:4px}
@@ -86,8 +85,8 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 #slistWrap{flex:1;overflow-y:auto;padding:0 12px;display:flex;flex-direction:column}
 #slistWrap .slist{flex:1;min-height:0}
 #sb{padding:4px 12px;font-size:11px;color:var(--md-on-surface-variant);display:flex;align-items:center;gap:8px;justify-content:space-between;border-top:1px solid var(--md-outline);flex-shrink:0}
-#colRight{flex:0 0 260px;border-left:1px solid var(--md-outline);background:var(--md-surface-2);overflow-y:auto;overflow-x:hidden;padding:8px;display:flex;flex-direction:column;gap:8px}
-#colRight h3{font-size:11px;color:var(--md-on-surface-variant);margin-bottom:2px}
+#colRight{flex:2;min-width:180px;border-left:1px solid var(--md-outline);background:var(--md-surface-2);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+#colRight h3{font-size:11px;color:var(--md-on-surface-variant);margin-bottom:4px}
 #colRight .log{flex:none}
 
 /* mobile */
@@ -102,11 +101,11 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   .tabs .mi{font-size:12px;display:none}
   .ctn{flex-direction:column;overflow:auto;padding:4px}
   #fileManager{flex-direction:column;overflow:visible;min-height:0}
-  #colLeft{flex:none!important;width:100%!important;border-right:none!important;border-bottom:1px solid var(--md-outline);max-height:30vh}
+  #colLeft{flex:none!important;border-right:none!important;border-bottom:1px solid var(--md-outline);max-height:30vh}
   #colMid{flex:none!important}
-  #colRight{flex:none!important;width:100%!important;border-left:none!important;border-top:1px solid var(--md-outline)}
+  #colRight{flex:none!important;border-left:none!important;border-top:1px solid var(--md-outline);max-height:none}
   #tree{flex:none!important;min-width:0!important;max-height:25vh}
-  #colMidTop{padding:8px 12px 0!important}
+  #colMidTop{padding:4px 8px 0!important}
   .slist{max-height:45vh}
   .tbar{padding:2px 4px!important;gap:3px;flex-wrap:wrap;margin:0}
   .tbar button{padding:2px 5px;font-size:9px;gap:1px;border-radius:6px}
