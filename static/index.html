@@ -50,6 +50,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 .cfg .err{font-size:10px;color:var(--md-error);margin-left:8px;display:none}
 .log{max-height:150px;overflow-y:auto;background:var(--md-surface-2);border-radius:12px;padding:8px 12px;font-size:11px;font-family:monospace;color:var(--md-on-surface)}
 .log .e{color:var(--md-error)}
+.log.collapsed{display:none}
 .pbar{width:100%;height:4px;background:var(--md-surface-variant);border-radius:2px;margin:8px 0;overflow:hidden}
 .pfill{height:100%;background:var(--md-primary);border-radius:2px;transition:width .3s}
 .ptxt{font-size:12px;color:var(--md-on-surface-variant);text-align:center}
@@ -69,20 +70,43 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--md-surface-variant);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:block}
 @media(max-width:600px){
-  .sgrid{grid-template-columns:1fr}
-  .ctn{max-width:100%;padding:8px}
-  .card{padding:12px;border-radius:12px;margin-bottom:8px}
-  .hdr{padding:8px 10px;gap:4px}
-  .hdr h1{font-size:14px}
-  .tabs button{padding:4px 10px;font-size:11px}
+  .sgrid{grid-template-columns:1fr 1fr}
+  .ctn{max-width:100%;padding:6px}
+  .card{padding:10px;border-radius:12px;margin-bottom:8px}
+  .card h3{margin-bottom:8px}
+  .hdr{padding:6px 10px;gap:4px}
+  .hdr h1{font-size:13px}
+  .hdr .btn-sm{padding:4px 8px!important;font-size:11px!important}
+  .tabs button{padding:4px 8px;font-size:10px;border-radius:6px}
+  .tabs .mi{font-size:14px}
   .slist{max-height:40vh}
-  .tbar{justify-content:flex-start}
-  .tbar button{padding:3px 10px;font-size:11px}
+  .tbar{justify-content:flex-start;gap:3px}
+  .tbar button{padding:2px 6px;font-size:10px;gap:1px}
+  .tbar .mi{font-size:14px}
+  .tbar .sep{height:14px}
+  .sep{height:16px}
   #tree{width:120px;min-width:100px;font-size:12px;line-height:1.8}
   .srch input{font-size:13px;padding:8px 12px}
   .srow{padding:8px 10px;gap:6px}
   .sinfo .t{font-size:13px}
-  .log{max-height:100px}
+  .sinfo .u{font-size:11px}
+  .srow input[type=checkbox]{width:16px;height:16px}
+  .log{max-height:100px;margin-top:4px}
+  .cfg input{width:100%}
+  .cfg .eg{max-width:100%;display:block;margin-left:0;margin-top:2px}
+  .schip{padding:8px 6px;font-size:11px;border-radius:10px;border-width:1px}
+  .schip .st{width:8px;height:8px;top:5px;left:6px}
+  .fld input,.fld textarea{font-size:14px;padding:10px 12px}
+  #btnDoc,#btnReadme,#btnClog{display:none!important}
+  #btnMore{display:inline-flex!important}
+  #moreMenu{position:absolute;right:10px;top:44px;background:var(--md-surface);border-radius:12px;box-shadow:var(--md-shadow-3);z-index:100;min-width:130px;overflow:hidden;display:none}
+  #moreMenu.open{display:block}
+  #moreMenu button{display:block;width:100%;padding:10px 14px;border:none;background:none;color:var(--md-on-surface);font-size:12px;text-align:left;cursor:pointer}
+  #moreMenu button:active{background:var(--md-surface-2)}
+  #moreMenu .mi{font-size:16px}
+  .btn{font-size:12px;padding:7px 14px}
+  #fileManager{min-height:250px!important;max-height:none!important}
+  #cfgPanel{padding-bottom:16px}
 }
 @media(max-width:400px){
   .hdr{flex-direction:column;align-items:center;text-align:center}
@@ -91,9 +115,10 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   #btnTree{display:inline-flex!important}
   #tree{position:absolute;z-index:10;background:var(--md-surface-1);width:180px;max-height:50vh;overflow-y:auto;left:8px;top:36px;border:1px solid var(--md-surface-variant);border-radius:8px;display:none;box-shadow:var(--md-shadow-3)}
   #tree.open{display:block}
-  .tbar button{padding:2px 8px;font-size:10px;gap:2px}
+  .tbar button{padding:2px 6px;font-size:10px;gap:1px}
   .srch{flex-wrap:nowrap}
-  .btn{font-size:12px;padding:8px 16px}
+  .sgrid{grid-template-columns:1fr 1fr}
+  #moreMenu{top:40px}
 }
 </style></head><body>
 <div class="hdr">
@@ -104,8 +129,10 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <button data-tab="edit" onclick="switchTab('edit');loadEditView()"><span class="material-symbols-outlined mi">edit</span> 编辑</button>
 </div>
 <button class="btn btn-sm" onclick="loadSongs()" style="width:auto;min-width:unset"><span class="material-symbols-outlined mi">refresh</span> 刷新</button>
-<button class="btn btn-sm" style="margin-left:auto;width:auto;min-width:unset" onclick="showDoc('README')"><span class="material-symbols-outlined mi">description</span> README</button>
-<button class="btn btn-sm" style="width:auto;min-width:unset" onclick="showDoc('CHANGELOG')"><span class="material-symbols-outlined mi">history</span> 改动日志</button>
+<button class="btn btn-sm" style="margin-left:auto;width:auto;min-width:unset" onclick="showDoc('README')" id="btnReadme"><span class="material-symbols-outlined mi">description</span> README</button>
+<button class="btn btn-sm" style="width:auto;min-width:unset" onclick="showDoc('CHANGELOG')" id="btnClog"><span class="material-symbols-outlined mi">history</span> 改动日志</button>
+<button class="btn btn-sm" id="btnMore" style="display:none;width:auto;min-width:unset" onclick="toggleMore()"><span class="material-symbols-outlined mi">more_vert</span></button>
+<div id="moreMenu"><button onclick="showDoc('README');toggleMore()"><span class="material-symbols-outlined mi">description</span> README</button><button onclick="showDoc('CHANGELOG');toggleMore()"><span class="material-symbols-outlined mi">history</span> 改动日志</button></div>
 
 
 </div>
@@ -143,12 +170,12 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 </div>
 <div class="pbar" id="pbar" style="display:none;height:2px;"><div class="pfill" id="pfill" style="width:0%"></div></div>
 </div>
-<div class="card"><h3>日志</h3><div class="log" id="log"><div>就绪</div></div></div>
+<div class="card"><h3 style="cursor:pointer" onclick="toggleLog()">日志 <span id="logArrow" style="font-size:10px">▼</span></h3><div class="log collapsed" id="log"><div>就绪</div></div></div>
 <div class="card"><h3>刮削源</h3><div class="sgrid">
-<div class="schip" id="card_acoustid"><div class="st off" id="st_acoustid"></div><div class="nm"><span class="material-symbols-outlined mi">mic</span>️ AcoustID</div></div>
-<div class="schip" id="card_netease"><div class="st off" id="st_netease"></div><div class="nm">网易云</div></div>
-<div class="schip" id="card_qqmusic"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
-<div class="schip" id="card_kugou"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div><div class="schip" id="card_kuwo"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div></div>
+<div class="schip" id="card_acoustid" onclick="toggleSource('acoustid')"><div class="st off" id="st_acoustid"></div><div class="nm"><span class="material-symbols-outlined mi">mic</span>️ AcoustID</div></div>
+<div class="schip" id="card_netease" onclick="toggleSource('netease')"><div class="st off" id="st_netease"></div><div class="nm">网易云</div></div>
+<div class="schip" id="card_qqmusic" onclick="toggleSource('qqmusic')"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
+<div class="schip" id="card_kugou" onclick="toggleSource('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div><div class="schip" id="card_kuwo" onclick="toggleSource('kuwo')"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div></div>
 <div id="cfgPanel">
 <div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--md-primary)">acoustid.org/webservice</a> 免费获取</span></div>
 <div class="cfg" id="cfg_netease"><label>网易云 URL</label><input id="nu" placeholder="输入 URL"><span class="eg">https://music.163.com/api/cloudsearch/pc</span><span class="err" id="err_nu">请填写 URL</span></div>
@@ -204,12 +231,13 @@ var E=function(id){return document.getElementById(id)};
 function token(){try{if(window.SongloftPlugin)return SongloftPlugin.getAuthToken()||""}catch(e){}try{var r=localStorage.getItem("songloft-auth");if(r)return JSON.parse(r).accessToken||""}catch(e){}var p=new URLSearchParams(location.search);return p.get("access_token")||""}
 async function af(u,o){o=o||{};o.headers=o.headers||{};var t=token();if(t)o.headers["Authorization"]="Bearer "+t;if(!o.headers["Content-Type"]&&o.method)o.headers["Content-Type"]="application/json";return fetch(u,o)}
 async function init(){await loadCfg();chkSources();await loadSongs();await loadFailed();resumeBatch()}
-async function chkSources(){try{var r=await af("./config/status");if(r.ok){var d=await r.json();S.srcStatus=d}["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s))st.className="st "+(ss[s]?"on":"off");else st.className="st"})}catch(e){}}
+async function chkSources(){try{var r=await af("./config/status");if(r.ok){var d=await r.json();S.srcStatus=d}["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s))st.className="st "+(ss[s]?"on":"off");else st.className="st"})}catch(e){}syncChips()}
+function syncChips(){["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var el=document.getElementById("card_"+s);if(el)el.classList.toggle("on",!!S.cfg[s])})}
 function resumeBatch(){var taskId=localStorage.getItem("batchTaskId");if(!taskId)return;var t=parseInt(localStorage.getItem("batchTotal"))||0;S.busy=true;E("btnStop").disabled=false;setP(true,0);E("ptxt").textContent="0/"+t;log("resuming batch...");S._loggedCnt=-1;S._pollId=setInterval(async function(){try{var pr=await af("./scrape/batch/progress?taskId="+taskId);if(!pr.ok){stopBatch();log("batch task expired");return}var pd=await pr.json();if(pd.error){stopBatch();return}setP(true,Math.round(pd.current/pd.total*100));var pe=E("ptxt");if(pe)pe.textContent=pd.current+"/"+pd.total;if(pd.lastLog&&pd.loggedCount!=S._loggedCnt){var ll=pd.lastLog.replace('| skipped','| ok (no change)');log(ll);S._loggedCnt=pd.loggedCount}if(pd.status==="done"){clearInterval(S._pollId);S._pollId=0;localStorage.removeItem("batchTaskId");localStorage.removeItem("batchTotal");setP(true,100);E("ptxt").textContent="";E("btnStop").disabled=true;(pd.failedIds||[]).forEach(function(id){addFailed(id,"failed")});var doneLogs=0;(pd.results||[]).forEach(function(r){if(S._loggedCnt===undefined||doneLogs>=S._loggedCnt){var st=r.fileWriteStatus==='skipped'?'ok (no change)':r.fileWriteStatus;log(r.artist+" - "+r.title+" | "+r.source+" | "+st)}doneLogs++});log("done: ok"+pd.success+" fail"+pd.failed+" skip"+pd.skipped);toast("ok"+pd.success+" fail"+pd.failed);await loadSongs();S.busy=false}}catch(e2){stopBatch()}},2000)}
 async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config");var t=await r.text();try{S.cfg=JSON.parse(t);uiCfg();return}catch(e2){if(i<2){await sleep(1000);continue}log("cfg parse err:"+(t.substring(0,80)),"e")}}catch(e){if(i<2){await sleep(1000);continue}log("cfg load err:"+e.message,"e")}}}
 async function saveCfg(){S.cfg.acoustid_api_key=E("ak").value.trim();S.cfg.netease_api_url=E("nu").value.trim();S.cfg.qqmusic_api_url=E("qu").value.trim();S.cfg.kugou_api_url=E("ku").value.trim();S.cfg.kuwo_api_url=E("kw").value.trim();await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();await chkSources();toast("saved")}
 function toggleSrc(s){}
-function uiCfg(){["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s)){st.className="st "+(ss[s]?"on":"off")}else{st.className="st"}});E("cfg_acoustid").style.display="";E("cfg_netease").style.display="";E("cfg_qqmusic").style.display="";E("cfg_kugou").style.display="";E("cfg_kuwo").style.display="";E("ak").value=S.cfg.acoustid_api_key||"";E("nu").value=S.cfg.netease_api_url||"";E("qu").value=S.cfg.qqmusic_api_url||"";E("ku").value=S.cfg.kugou_api_url||"";E("kw").value=S.cfg.kuwo_api_url||"https://kuwo.cn";E("cfgPanel").style.display="block"}
+function uiCfg(){["acoustid","netease","qqmusic","kugou","kuwo"].forEach(function(s){var st=E("st_"+s);var ss=S.srcStatus||{};if(ss.hasOwnProperty(s)){st.className="st "+(ss[s]?"on":"off")}else{st.className="st"}});E("cfg_acoustid").style.display="";E("cfg_netease").style.display="";E("cfg_qqmusic").style.display="";E("cfg_kugou").style.display="";E("cfg_kuwo").style.display="";E("ak").value=S.cfg.acoustid_api_key||"";E("nu").value=S.cfg.netease_api_url||"";E("qu").value=S.cfg.qqmusic_api_url||"";E("ku").value=S.cfg.kugou_api_url||"";E("kw").value=S.cfg.kuwo_api_url||"https://kuwo.cn";E("cfgPanel").style.display="block";syncChips()}
 async function loadSongs(kw){try{var u="./songs?limit=10000";if(kw)u+="&q="+encodeURIComponent(kw);var r=await af(u);var d=await r.json();S._allSongs=(d.songs||[]).filter(function(s){return !(s.duration>0&&s.duration<30)});S.songs=S._allSongs.slice();S._curPath="";S._musicPrefix="";if(S._allSongs.length){var fp=S._allSongs[0].file_path||"";var parts=fp.split("/");if(parts.length>=3){S._musicPrefix=parts.slice(0,3).join("/")+"/";S._rootName=parts[2]||'全部'}}filterPath()}catch(e){log("songs load err:"+e.message,"e");S.songs=[];S._allSongs=[];render()}}
 function search(){loadSongs(E("q").value.trim()||undefined)}
 function filterPath(){var q=E("q").value.trim().toLowerCase();var prefix=S._musicPrefix+(S._curPath?S._curPath+"/":"");S.songs=S._allSongs.filter(function(s){var fp=s.file_path||"";if(!fp.startsWith(prefix))return false;if(!S._curPath){var rel=fp.substring(prefix.length);if(rel.indexOf("/")>=0)return false}if(q){var ok=((s.title||"")+(s.artist||"")+(s.album||"")).toLowerCase().indexOf(q)>=0;if(!ok&&(s.file_path||"").toLowerCase().indexOf(q)>=0)ok=true;if(!ok)return false}return true});render()}
@@ -284,6 +312,10 @@ function escH(s){var d={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39
 async function applyR(el){var id=parseInt(el.dataset.sid);var art=el.dataset.art;var tit=el.dataset.tit;var alb=el.dataset.alb;closeRetry();S.busy=true;setP(true,0);try{var r=await af("./tags/"+id,{method:"PUT",body:JSON.stringify({title:tit,artist:art,album:alb})});var d=await r.json();if(d.error){log("写入失败:"+d.error,"e");toast("失败")}else{log("ok "+art+" - "+tit+" | "+d.file_write);toast("写入成功");S.failedSongs=S.failedSongs.filter(function(f){return f.id!==id});try{await af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)})}catch(e){log("save failed err:"+e.message)}renderFailed();await loadSongs()}}catch(e){log("err:"+e.message,"e")}S.busy=false;setP(false,100)}
 
 window.onload=init;
+function toggleMore(){var m=E("moreMenu");m.classList.toggle("open")}
+function toggleLog(){var l=E("log");var a=E("logArrow");l.classList.toggle("collapsed");a.textContent=l.classList.contains("collapsed")?"▶":"▼"}
+function toggleSource(name){var cfg=S.cfg||{};cfg[name]=!cfg[name];saveCfgSilent();var el=document.getElementById("card_"+name);if(el)el.classList.toggle("on",cfg[name]);var st=E("st_"+name);if(st)st.className="st "+(cfg[name]?"on":"off")}
+function saveCfgSilent(){af("./config",{method:"PUT",body:JSON.stringify(S.cfg)}).catch(function(){})}
 </script>
 </body>
 </html>
