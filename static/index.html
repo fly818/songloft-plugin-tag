@@ -84,8 +84,9 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   .log{max-height:100px}
 }
 @media(max-width:400px){
-  .hdr{flex-direction:column;align-items:flex-start}
+  .hdr{flex-direction:column;align-items:center;text-align:center}
   .hdr h1{margin-bottom:4px}
+  .hdr .tabs{margin:0 auto}
   #btnTree{display:inline-flex!important}
   #tree{position:absolute;z-index:10;background:var(--md-surface-1);width:180px;max-height:50vh;overflow-y:auto;left:8px;top:36px;border:1px solid var(--md-surface-variant);border-radius:8px;display:none;box-shadow:var(--md-shadow-3)}
   #tree.open{display:block}
@@ -101,9 +102,9 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <button data-tab="failed" onclick="switchTab('failed')"><span class="material-symbols-outlined mi">warning</span> 失败</button>
 <button data-tab="edit" onclick="switchTab('edit');loadEditView()"><span class="material-symbols-outlined mi">edit</span> 编辑</button>
 </div>
-<button class="btn btn-sm" onclick="loadSongs()"><span class="material-symbols-outlined mi">refresh</span></button>
-<button class="btn btn-sm" style="margin-left:auto" onclick="showDoc('README')">📖 README</button>
-<button class="btn btn-sm" onclick="showDoc('CHANGELOG')">📝 改动日志</button>
+<button class="btn btn-sm" onclick="loadSongs()"><span class="material-symbols-outlined mi">refresh</span> 刷新</button>
+<button class="btn btn-sm" style="margin-left:auto" onclick="showDoc('README')"><span class="material-symbols-outlined mi">description</span> README</button>
+<button class="btn btn-sm" onclick="showDoc('CHANGELOG')"><span class="material-symbols-outlined mi">history</span> 改动日志</button>
 
 
 </div>
