@@ -74,12 +74,20 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--md-surface-variant);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:flex!important;flex:1;overflow:hidden;min-height:0}
 #fileManager{display:flex;flex:1;overflow:hidden;min-height:0}
-#tree{flex:3;min-width:180px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);padding:8px 10px;font-size:12px;line-height:2;flex-shrink:0;background:var(--md-surface-2)}
-#crumb{font-size:11px;color:var(--md-on-surface-variant);padding:4px 0 6px;display:none}
-#rightPane{padding:10px 14px;overflow-y:auto;flex:7;display:flex;flex-direction:column;min-width:0}
-#rightPane .slist{flex:1;min-height:0}
-#rightPane .sec{border-top:1px solid var(--md-outline);padding-top:10px;margin-bottom:0}
-#sb{padding:4px 14px;font-size:11px;color:var(--md-on-surface-variant);display:flex;align-items:center;gap:8px;justify-content:space-between;border-top:1px solid var(--md-outline);margin-bottom:8px}
+#colLeft{flex:2;min-width:140px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);background:var(--md-surface-2);display:flex;flex-direction:column}
+#colLeft .colHead{padding:6px 10px;font-size:11px;color:var(--md-on-surface-variant);border-bottom:1px solid var(--md-outline);flex-shrink:0}
+#tree{padding:8px 10px;font-size:12px;line-height:2;overflow-y:auto;flex:1}
+#colMid{flex:6;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+#colMidTop{padding:8px 12px 0;flex-shrink:0}
+#colMidTop .tbar{margin-bottom:4px}
+#colMidTop .srch{margin-bottom:4px}
+#crumb{font-size:11px;color:var(--md-on-surface-variant);padding:0 0 4px;display:none}
+#slistWrap{flex:1;overflow-y:auto;padding:0 12px;display:flex;flex-direction:column}
+#slistWrap .slist{flex:1;min-height:0}
+#sb{padding:4px 12px;font-size:11px;color:var(--md-on-surface-variant);display:flex;align-items:center;gap:8px;justify-content:space-between;border-top:1px solid var(--md-outline);flex-shrink:0}
+#colRight{flex:2;min-width:180px;border-left:1px solid var(--md-outline);background:var(--md-surface-2);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+#colRight h3{font-size:11px;color:var(--md-on-surface-variant);margin-bottom:4px}
+#colRight .log{flex:none}
 
 /* mobile */
 #mblWrap{display:none}
@@ -93,8 +101,11 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   .tabs .mi{font-size:12px;display:none}
   .ctn{flex-direction:column;overflow:auto;padding:4px}
   #fileManager{flex-direction:column;overflow:visible;min-height:0}
-  #tree{width:100%!important;flex:none;min-width:0;max-height:30vh;border-right:none;border-bottom:1px solid var(--md-outline);font-size:12px;line-height:1.8}
-  #rightPane{padding:6px 8px;overflow:visible;flex:none}
+  #colLeft{flex:none!important;border-right:none!important;border-bottom:1px solid var(--md-outline);max-height:30vh}
+  #colMid{flex:none!important}
+  #colRight{flex:none!important;border-left:none!important;border-top:1px solid var(--md-outline);max-height:none}
+  #tree{flex:none!important;min-width:0!important;max-height:25vh}
+  #colMidTop{padding:4px 8px 0!important}
   .slist{max-height:45vh}
   .tbar{padding:2px 4px!important;gap:3px;flex-wrap:wrap;margin:0}
   .tbar button{padding:2px 5px;font-size:9px;gap:1px;border-radius:6px}
@@ -147,11 +158,14 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 </div>
 <div class="ctn"><div class="tab-content on" id="tab-songs">
 <div id="fileManager">
-<div id="tree"></div>
-<div id="rightPane">
+<!-- COL 1: directory tree -->
+<div id="colLeft"><div class="colHead" id="colLeftHead">目录</div><div id="tree"></div></div>
+<!-- COL 2: search + toolbar + song list + status -->
+<div id="colMid">
+<div id="colMidTop">
 <div class="srch"><input id="q" placeholder="搜索（回车搜索）..." onkeydown="if(event.key==='Enter')search()"><button class="btn btn-sm btn-s" onclick="search()"><span class="material-symbols-outlined mi">search</span></button><button class="btn btn-sm btn-s" id="btnTree" onclick="toggleTree()" style="display:none">☰</button></div>
 <div id="crumb"></div>
-<div class="tbar" style="margin-bottom:6px" id="tbar">
+<div class="tbar" id="tbar">
 <button onclick="showAll()" id="btnAllSongs"><span class="material-symbols-outlined mi">list</span> 全部歌曲</button>
 <button onclick="selAll()"><span class="material-symbols-outlined mi">check_box</span> 全选</button>
 <button onclick="selNone()"><span class="material-symbols-outlined mi">check_box_outline_blank</span> 清空</button>
@@ -165,21 +179,21 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class="material-symbols-outlined mi">stop</span> 停止</button>
 <button onclick="clearScraped()"><span class="material-symbols-outlined mi">delete</span> 清空记录</button>
 </div>
-<div class="slist" id="list"></div>
+</div>
+<div id="slistWrap"><div class="slist" id="list"></div></div>
 <div id="sb"><span id="selInfo"></span><span id="ptxt" style="color:var(--md-primary)"></span></div>
 <div class="pbar" id="pbar" style="display:none"><div class="pfill" id="pfill" style="width:0%"></div></div>
-<div class="sec">
-<h3 class="log-head" onclick="var l=E('log');l.style.display=l.style.display==='none'?'block':'none';var a=E('logArrow');if(a)a.classList.toggle('up')"><span class="arw" id="logArrow">▼</span> 日志</h3>
-<div class="log" id="log"><div>就绪</div></div>
 </div>
-<div class="sec">
-<h3>刮削源</h3>
+<!-- COL 3: sources + config + log -->
+<div id="colRight">
+<div><h3>刮削源</h3>
 <div class="sgrid">
-<div class="schip" id="card_acoustid" onclick="toggleSource('acoustid')"><div class="st off" id="st_acoustid"></div><div class="nm"><span class="material-symbols-outlined mi">mic</span>️ AcoustID</div></div>
+<div class="schip" id="card_acoustid" onclick="toggleSource('acoustid')"><div class="st off" id="st_acoustid"></div><div class="nm"><span class="mi">mic</span>AcoustID</div></div>
 <div class="schip" id="card_netease" onclick="toggleSource('netease')"><div class="st off" id="st_netease"></div><div class="nm">网易云</div></div>
 <div class="schip" id="card_qqmusic" onclick="toggleSource('qqmusic')"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
-<div class="schip" id="card_kugou" onclick="toggleSource('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div><div class="schip" id="card_kuwo" onclick="toggleSource('kuwo')"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div>
-</div>
+<div class="schip" id="card_kugou" onclick="toggleSource('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div>
+<div class="schip" id="card_kuwo" onclick="toggleSource('kuwo')"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div>
+</div></div>
 <div id="cfgPanel" class="cfg-grid">
 <div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--md-primary)">acoustid.org/webservice</a> 免费获取</span></div>
 <div class="cfg" id="cfg_netease"><label>网易云 URL</label><input id="nu" placeholder="输入 URL"><span class="eg">https://music.163.com/api/cloudsearch/pc</span><span class="err" id="err_nu">请填写 URL</span></div>
@@ -187,12 +201,13 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <div class="cfg" id="cfg_kugou"><label>酷狗 URL</label><input id="ku" placeholder="输入 URL"><span class="eg">https://songsearch.kugou.com/song_search_v2</span><span class="err" id="err_ku">请填写 URL</span></div>
 <div class="cfg" id="cfg_kuwo"><label>酷我 URL</label><input id="kw" placeholder="输入 URL"><span class="eg">https://kuwo.cn</span><span class="err" id="err_kw">请填写 URL</span></div>
 </div>
-<button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:4px"><span class="material-symbols-outlined mi">save</span> 保存配置</button>
-</div>
+<button class="btn btn-sm btn-s" onclick="saveCfg()"><span class="mi">save</span> 保存配置</button>
+<div><h3 class="log-head" onclick="var l=E('log');l.style.display=l.style.display==='none'?'block':'none';var a=E('logArrow');if(a)a.classList.toggle('up')"><span class="arw" id="logArrow">▼</span> 日志</h3>
+<div class="log" id="log"><div>就绪</div></div></div>
 </div>
 </div>
 </div><div class="tab-content" id="tab-failed">
-<div id="rightPane">
+<div id="rightPane" style="padding:12px;overflow-y:auto;flex:1">
 <div class="card"><h3><span class="material-symbols-outlined mi">warning</span> 失败/跳过列表</h3>
 <div class="tbar"><button onclick="loadFailed()"><span class="material-symbols-outlined mi">refresh</span> 刷新</button><button onclick="clearFailed()"><span class="material-symbols-outlined mi">delete</span> 清空</button></div>
 <div class="slist" id="failedList" style="padding-right:8px"><div style="text-align:center;padding:20px;color:var(--md-on-surface-variant)">点击刷新加载</div></div></div>
@@ -311,8 +326,9 @@ function toggleTree(){var t=E("tree");t.classList.toggle("open")}
 function showAll(){E("q").value="";S._curPath="";S.songs=S._allSongs.slice();render()}
 function navigate(sub){S._curPath=S._curPath?S._curPath+"/"+sub:sub;filterPath()}
 function render(){renderDirs();var c=E("list");if(!S.songs.length){c.innerHTML="<div style=text-align:center;padding:40px;color:var(--md-on-surface-variant)>no songs</div>";return}c.innerHTML=S.songs.map(function(s){var sl=S.sel.has(s.id)?" sel":"";var ck=S.sel.has(s.id)?" checked":"";return"<div class=srow"+sl+" onclick=tgl("+s.id+",event)><input type=checkbox"+ck+" onclick=event.stopPropagation();tgl("+s.id+")><div class=sinfo><div class=t>"+esc(s.title||"?")+"</div><div class=u>"+(s.artist||"?")+(s.album?" · "+esc(s.album):"")+" · "+fm(s.duration)+(s.format?" · "+esc(s.format):"")+"</div></div></div>"}).join("");upd()}
-function renderDirs(){var t=E("tree");var c=E("crumb");if(!S._allSongs||!S._allSongs.length){t.innerHTML="<div style='padding:8px;color:var(--md-on-surface-variant)'>no songs</div>";c.style.display="none";return}
+function renderDirs(){var t=E("tree");var c=E("crumb");if(!S._allSongs||!S._allSongs.length){t.innerHTML="<div style='padding:8px;color:var(--md-on-surface-variant)'>no songs</div>";c.style.display="none";var ch=E("colLeftHead");if(ch)ch.textContent="目录 (0)";return}
 var h=buildTree("",0);t.innerHTML=h||'<div style="color:var(--md-on-surface-variant);padding:8px">empty tree</div>';
+var ch=E("colLeftHead");if(ch){var keys=t.querySelectorAll("[data-p]");ch.textContent="目录 ("+keys.length+")"};
 var ds=t.getElementsByTagName("div");for(var i=0;i<ds.length;i++){ds[i].onclick=function(){var p=this.getAttribute("data-p");if(p)navTo(p)}}
 if(S._curPath){var p=S._curPath.split("/");var ch='<span style="color:var(--md-primary);cursor:pointer" onclick="navTo(\'\')">'+(S._rootName||'全部')+'</span>';var sf="";for(var i=0;i<p.length;i++){sf+=(i?"/":"")+p[i];ch+=' › <span style="'+(i===p.length-1?'color:var(--md-on-surface)':'color:var(--md-primary);cursor:pointer')+'" onclick="navTo(\''+escH(sf)+'\')">'+esc(p[i])+'</span>'}c.innerHTML=ch;c.style.display=""}else{c.innerHTML='<span style="color:var(--md-on-surface)">'+(S._rootName||'全部')+'</span>';c.style.display=""}}
 function buildTree(path,depth){var prefix=S._musicPrefix+(path?path+"/":"");var sub={};S._allSongs.forEach(function(s){var fp=(s.file_path||"").replace(/^\//,"");if(!fp.startsWith(prefix))return;var rel=fp.substring(prefix.length);if(rel.charAt(0)==="/")rel=rel.substring(1);var si=rel.indexOf("/");if(si>0)sub[rel.substring(0,si)]=true});var keys=Object.keys(sub).sort();var h="";var sel=S._curPath||"";for(var i=0;i<keys.length;i++){var nm=keys[i];var pn=path?path+"/"+nm:nm;var s=pn===sel?" class=\"tr-n sel\"":" class=\"tr-n\"";h+='<div'+s+' style="padding-left:'+(depth*12+4)+'px" data-p="'+escH(pn)+'">'+esc(nm)+'</div>'+buildTree(pn,depth+1)}return h}function tgl(id,ev){if(ev)ev.stopPropagation();if(S.sel.has(id))S.sel.delete(id);else S.sel.add(id);render()}
