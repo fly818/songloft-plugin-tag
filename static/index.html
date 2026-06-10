@@ -70,43 +70,54 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 .tab-content{display:none}.tab-content.on{display:block}
 @media(max-width:600px){
   .sgrid{grid-template-columns:1fr 1fr}
-  .ctn{max-width:100%;padding:6px}
-  .card{padding:10px;border-radius:12px;margin-bottom:8px}
-  .card h3{margin-bottom:8px}
-  .hdr{padding:6px 10px;gap:4px}
-  .hdr h1{font-size:13px}
-  .hdr .btn-sm{padding:4px 8px!important;font-size:11px!important}
-  .tabs button{padding:4px 8px;font-size:10px;border-radius:6px}
-  .tabs .mi{font-size:14px}
-  .slist{max-height:40vh}
-  .tbar{justify-content:flex-start;gap:3px}
-  .tbar button{padding:2px 6px;font-size:10px;gap:1px}
-  .tbar .mi{font-size:14px}
-  .tbar .sep{height:14px}
-  .sep{height:16px}
+  .ctn{max-width:100%;padding:4px}
+  .card{padding:8px;border-radius:10px;margin-bottom:6px}
+  .card h3{margin-bottom:6px;font-size:12px}
+  .hdr{padding:4px 8px;gap:4px;flex-wrap:nowrap}
+  .hdr h1{font-size:12px;white-space:nowrap}
+  .hdr h1 .mi{font-size:16px}
+  .hdr .btn-sm{padding:3px 8px!important;font-size:10px!important;border-radius:10px!important;gap:3px!important}
+  .hdr .btn-sm .mi{font-size:14px!important}
+  .tabs{display:flex;gap:1px;border-radius:8px;padding:1px}
+  .tabs button{padding:3px 8px;font-size:10px;border-radius:6px}
+  .tabs .mi{font-size:12px;display:none}
+  .slist{max-height:45vh}
+  .tbar{padding:2px 4px!important;gap:2px;flex-wrap:wrap;margin:0}
+  .tbar button{padding:2px 5px;font-size:9px;gap:1px;border-radius:6px}
+  .tbar .mi{font-size:12px}
+  .tbar .sep{height:12px;margin:0 1px}
+  .tbar .tbar-extra{display:none}
+  .tbar .tbar-toggle{padding:2px 5px;font-size:9px;cursor:pointer;color:var(--md-primary);border:none;background:none}
+  .tbar.open .tbar-extra{display:inline-flex!important}
+  .sep{height:14px;margin:0 1px}
   #tree{width:120px;min-width:100px;font-size:12px;line-height:1.8}
-  .srch input{font-size:13px;padding:8px 12px}
-  .srow{padding:8px 10px;gap:6px}
-  .sinfo .t{font-size:13px}
-  .sinfo .u{font-size:11px}
-  .srow input[type=checkbox]{width:16px;height:16px}
-  .log{max-height:100px;margin-top:4px}
+  .srch input{font-size:12px;padding:6px 10px}
+  .srow{padding:6px 8px;gap:4px;border-radius:8px}
+  .sinfo .t{font-size:12px}
+  .sinfo .u{font-size:10px}
+  .srow input[type=checkbox]{width:14px;height:14px}
+  .log{max-height:80px;margin-top:2px}
   .log.collapsed{display:none}
   .cfg input{width:100%}
   .cfg .eg{max-width:100%;display:block;margin-left:0;margin-top:2px}
-  .schip{padding:8px 6px;font-size:11px;border-radius:10px;border-width:1px}
-  .schip .st{width:8px;height:8px;top:5px;left:6px}
+  .schip{padding:6px 4px;font-size:10px;border-radius:8px;border-width:1px}
+  .schip .st{width:6px;height:6px;top:4px;left:4px}
   .fld input,.fld textarea{font-size:14px;padding:10px 12px}
   #btnDoc,#btnReadme,#btnClog{display:none!important}
   #btnMore{display:inline-flex!important}
-  #moreMenu{position:absolute;right:10px;top:44px;background:var(--md-surface);border-radius:12px;box-shadow:var(--md-shadow-3);z-index:100;min-width:130px;overflow:hidden;display:none}
+  #tbarToggle{display:inline-flex!important}
+  #moreMenu{position:absolute;right:8px;top:38px;background:var(--md-surface);border-radius:10px;box-shadow:var(--md-shadow-3);z-index:100;min-width:120px;overflow:hidden;display:none}
   #moreMenu.open{display:block}
-  #moreMenu button{display:block;width:100%;padding:10px 14px;border:none;background:none;color:var(--md-on-surface);font-size:12px;text-align:left;cursor:pointer}
+  #moreMenu button{display:block;width:100%;padding:8px 12px;border:none;background:none;color:var(--md-on-surface);font-size:11px;text-align:left;cursor:pointer}
   #moreMenu button:active{background:var(--md-surface-2)}
-  #moreMenu .mi{font-size:16px}
-  .btn{font-size:12px;padding:7px 14px}
-  #fileManager{min-height:250px!important;max-height:none!important}
-  #cfgPanel{padding-bottom:16px}
+  #moreMenu .mi{font-size:14px}
+  .btn{font-size:12px;padding:6px 12px}
+  .btn-sm{padding:4px 10px!important;font-size:11px!important}
+  #fileManager{min-height:200px!important;max-height:none!important}
+  #cfgPanel{padding-bottom:12px}
+  #cfgAdvToggle{display:block!important}
+  #cfgAdv{display:none}
+  #cfgAdv.open{display:block}
 }
 @media(max-width:400px){
   .hdr{flex-direction:column;align-items:center;text-align:center}
@@ -147,19 +158,22 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <div style="display:flex;flex:1;min-height:400px;max-height:calc(100vh - 240px)" id="fileManager">
 <div id="tree" style="width:200px;min-width:120px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-surface-variant);padding:8px 6px;font-size:12px;line-height:2;resize:horizontal;flex-shrink:0"></div>
 <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
-<div class="tbar" style="padding:4px 8px;border-bottom:1px solid var(--md-surface-variant);margin:0;gap:4px">
+<div class="tbar" style="padding:4px 8px;border-bottom:1px solid var(--md-surface-variant);margin:0;gap:4px" id="tbar">
 <button onclick="showAll()" id="btnAllSongs"><span class="material-symbols-outlined mi">list</span> 全部歌曲</button>
+<button onclick="doScrape()" id="btnScrape" disabled><span class="material-symbols-outlined mi">edit_note</span> 刮削</button>
+<span class="tbar-extra" style="display:inline-flex;align-items:center;gap:2px">
 <button onclick="selAll()"><span class="material-symbols-outlined mi">check_box</span> 全选</button>
 <button onclick="selNone()"><span class="material-symbols-outlined mi">check_box_outline_blank</span> 清空</button>
 <button onclick="clearScraped()"><span class="material-symbols-outlined mi">delete</span> 清空记录</button>
 <span class=sep></span>
-<button onclick="dlCover()" id="btnDlCover" disabled><span class="material-symbols-outlined mi">download</span> 下载封面</button>
-<button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面（需主程序 v2.7.1+ 支持）"><span class="material-symbols-outlined mi">hide_image</span> 清除封面</button>
+<button onclick="dlCover()" id="btnDlCover" disabled><span class="material-symbols-outlined mi">download</span></button>
+<button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面"><span class="material-symbols-outlined mi">hide_image</span></button>
 <span class=sep></span>
-<button onclick="doScrape()" id="btnScrape" disabled><span class="material-symbols-outlined mi">edit_note</span> 刮削</button>
 <button onclick="batchForce()" id="btnForce" disabled><span class="material-symbols-outlined mi">refresh</span> 强制</button>
 <button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class="material-symbols-outlined mi">stop</span> 停止</button>
 <button id="btnPrev" onclick="preview()" disabled><span class="material-symbols-outlined mi">search</span> 预览</button>
+</span>
+<button class="tbar-toggle" id="tbarToggle" onclick="toggleTbar()" style="display:none"><span class="material-symbols-outlined mi" style="font-size:14px">more_horiz</span></button>
 
 </div>
 <div class="slist" id="list" style="flex:1;overflow-y:auto"></div>
@@ -177,12 +191,13 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <div class="schip" id="card_qqmusic" onclick="toggleSource('qqmusic')"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
 <div class="schip" id="card_kugou" onclick="toggleSource('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div><div class="schip" id="card_kuwo" onclick="toggleSource('kuwo')"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div></div>
 <div id="cfgPanel">
-<div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--md-primary)">acoustid.org/webservice</a> 免费获取</span></div>
 <div class="cfg" id="cfg_netease"><label>网易云 URL</label><input id="nu" placeholder="输入 URL"><span class="eg">https://music.163.com/api/cloudsearch/pc</span><span class="err" id="err_nu">请填写 URL</span></div>
 <div class="cfg" id="cfg_qqmusic"><label>QQ音乐 URL</label><input id="qu" placeholder="输入 URL"><span class="eg">https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span><span class="err" id="err_qu">请填写 URL</span></div>
 <div class="cfg" id="cfg_kugou"><label>酷狗 URL</label><input id="ku" placeholder="输入 URL"><span class="eg">https://songsearch.kugou.com/song_search_v2</span><span class="err" id="err_ku">请填写 URL</span></div>
 <div class="cfg" id="cfg_kuwo"><label>酷我 URL</label><input id="kw" placeholder="输入 URL"><span class="eg">https://kuwo.cn</span><span class="err" id="err_kw">请填写 URL</span></div>
-<button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:8px"><span class="material-symbols-outlined mi">save</span> 保存配置</button></div></div></div><div class="tab-content" id="tab-failed">
+<button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:8px"><span class="material-symbols-outlined mi">save</span> 保存配置</button>
+<div id="cfgAdvToggle" style="display:none;cursor:pointer;font-size:11px;color:var(--md-primary);margin-top:6px" onclick="toggleCfgAdv()"><span id="cfgAdvArrow">▶</span> 高级设置</div>
+<div id="cfgAdv"><div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--md-primary)">acoustid.org/webservice</a> 免费获取</span></div></div></div></div></div><div class="tab-content" id="tab-failed">
 <div class="card"><h3><span class="material-symbols-outlined mi">warning</span> 失败/跳过列表</h3>
 <div class="tbar"><button onclick="loadFailed()"><span class="material-symbols-outlined mi">refresh</span> 刷新</button><button onclick="clearFailed()"><span class="material-symbols-outlined mi">delete</span> 清空</button></div>
 <div class="slist" id="failedList" style="padding-right:8px"><div style="text-align:center;padding:20px;color:var(--md-on-surface-variant)">点击刷新加载</div></div></div></div><div class="tab-content" id="tab-edit">
@@ -316,6 +331,8 @@ function toggleMore(){var m=E("moreMenu");m.classList.toggle("open")}
 function toggleLog(){var l=E("log");var a=E("logArrow");l.classList.toggle("collapsed");a.textContent=l.classList.contains("collapsed")?"▶":"▼"}
 function toggleSource(name){var cfg=S.cfg||{};cfg[name]=!cfg[name];saveCfgSilent();var el=document.getElementById("card_"+name);if(el)el.classList.toggle("on",cfg[name]);var st=E("st_"+name);if(st)st.className="st "+(cfg[name]?"on":"off")}
 function saveCfgSilent(){af("./config",{method:"PUT",body:JSON.stringify(S.cfg)}).catch(function(){})}
+function toggleTbar(){var t=E("tbar");if(t)t.classList.toggle("open")}
+function toggleCfgAdv(){var c=E("cfgAdv");var a=E("cfgAdvArrow");if(c){c.classList.toggle("open");a.textContent=c.classList.contains("open")?"▼":"▶"}}
 </script>
 </body>
 </html>
