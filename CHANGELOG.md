@@ -35,6 +35,7 @@
 - 升级到 v2.7.0（songloft/songloft:tmp-full-amd64）
 
 ### 优化
+- 删除操作栏「📖 说明」按钮（顶栏 README/改动日志按钮保留）
 - 删除 `discogs` 无效源权重（未实现、无调用方）
 - AGENTS.md 全面精简 + 合并迭代方向
 
