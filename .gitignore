@@ -8,5 +8,8 @@ _fullbuild.js
 
 AGENTS.md
 reasonix.toml
+迭代方向.md
 tmp_*
 .codegraph/
+.cache/
+.reasonix/
