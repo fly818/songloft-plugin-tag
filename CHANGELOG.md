@@ -35,6 +35,7 @@
 
 ### 主程序联动
 - **Go 后端 #145 修复**：`WriteTags` handler 下载封面失败或传空 `cover_url` 时清除旧 CoverPath/CoverURL，根除 v1.0.4 损坏封面永久残留问题（重新刮削即可覆盖）
+- **Go 后端 #147 修复**：`GetPlaylistCover` 歌单无专属封面时回退到第一首有本地封面的歌曲，复用 `serveLocalCover()` 方法
 - 升级到 v2.7.0（songloft/songloft:tmp-full-amd64）
 
 ### 优化
