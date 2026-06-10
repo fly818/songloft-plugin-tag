@@ -103,6 +103,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
   .btn-sm{padding:4px 10px!important;font-size:11px!important}
   #fileManager{min-height:200px!important;max-height:none!important}
   #cfgPanel{padding-bottom:12px}
+  .cfg-grid{grid-template-columns:1fr!important}
 }
 @media(max-width:400px){
   .hdr{flex-direction:column;align-items:center;text-align:center}
@@ -136,21 +137,21 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 </div>
 <div id="crumb" style="font-size:11px;color:var(--md-on-surface-variant);padding:2px 12px;border-bottom:1px solid var(--md-surface-variant);display:none"></div>
 <div style="display:flex;flex:1;min-height:400px;max-height:calc(100vh - 240px)" id="fileManager">
-<div id="tree" style="width:200px;min-width:120px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-surface-variant);padding:8px 6px;font-size:12px;line-height:2;resize:horizontal;flex-shrink:0"></div>
+<div id="tree" style="width:220px;min-width:160px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--md-outline);padding:8px 6px;font-size:12px;line-height:2;flex-shrink:0;background:var(--md-surface-2)"></div>
 <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
 <div class="tbar" style="padding:4px 8px;border-bottom:1px solid var(--md-surface-variant);margin:0;gap:4px" id="tbar">
 <button onclick="showAll()" id="btnAllSongs"><span class="material-symbols-outlined mi">list</span> 全部歌曲</button>
 <button onclick="selAll()"><span class="material-symbols-outlined mi">check_box</span> 全选</button>
 <button onclick="selNone()"><span class="material-symbols-outlined mi">check_box_outline_blank</span> 清空</button>
-<button onclick="clearScraped()"><span class="material-symbols-outlined mi">delete</span> 清空记录</button>
-<span class=sep></span>
-<button onclick="dlCover()" id="btnDlCover" disabled><span class="material-symbols-outlined mi">download</span> 下载封面</button>
-<button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面（需主程序 v2.7.1+ 支持）"><span class="material-symbols-outlined mi">hide_image</span> 清除封面</button>
 <span class=sep></span>
 <button onclick="doScrape()" id="btnScrape" disabled><span class="material-symbols-outlined mi">edit_note</span> 刮削</button>
 <button onclick="batchForce()" id="btnForce" disabled><span class="material-symbols-outlined mi">refresh</span> 强制</button>
-<button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class="material-symbols-outlined mi">stop</span> 停止</button>
 <button id="btnPrev" onclick="preview()" disabled><span class="material-symbols-outlined mi">search</span> 预览</button>
+<span class=sep></span>
+<button onclick="dlCover()" id="btnDlCover" disabled><span class="material-symbols-outlined mi">download</span> 下载封面</button>
+<button onclick="clearCover()" id="btnClearCover" disabled title="清除嵌入式封面"><span class="material-symbols-outlined mi">hide_image</span> 清除封面</button>
+<button onclick="stopBatch()" id="btnStop" disabled class="btn-stop"><span class="material-symbols-outlined mi">stop</span> 停止</button>
+<button onclick="clearScraped()"><span class="material-symbols-outlined mi">delete</span> 清空记录</button>
 </div>
 <div class="slist" id="list" style="flex:1;overflow-y:auto"></div>
 </div>
@@ -160,19 +161,19 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 </div>
 <div class="pbar" id="pbar" style="display:none;height:2px;"><div class="pfill" id="pfill" style="width:0%"></div></div>
 </div>
-<div class="card"><h3>日志</h3><div class="log" id="log"><div>就绪</div></div></div>
+<div class="card"><h3 class="log-head" onclick="var l=E('log');l.style.display=l.style.display==='none'?'block':'none';var a=E('logArrow');if(a)a.classList.toggle('up')"><span class="arw" id="logArrow">▼</span> 日志</h3><div class="log" id="log"><div>就绪</div></div></div>
 <div class="card"><h3>刮削源</h3><div class="sgrid">
 <div class="schip" id="card_acoustid" onclick="toggleSource('acoustid')"><div class="st off" id="st_acoustid"></div><div class="nm"><span class="material-symbols-outlined mi">mic</span>️ AcoustID</div></div>
 <div class="schip" id="card_netease" onclick="toggleSource('netease')"><div class="st off" id="st_netease"></div><div class="nm">网易云</div></div>
 <div class="schip" id="card_qqmusic" onclick="toggleSource('qqmusic')"><div class="st off" id="st_qqmusic"></div><div class="nm">QQ音乐</div></div>
 <div class="schip" id="card_kugou" onclick="toggleSource('kugou')"><div class="st off" id="st_kugou"></div><div class="nm">酷狗</div></div><div class="schip" id="card_kuwo" onclick="toggleSource('kuwo')"><div class="st off" id="st_kuwo"></div><div class="nm">酷我</div></div></div>
-<div id="cfgPanel">
+<div id="cfgPanel" class="cfg-grid">
 <div class="cfg" id="cfg_acoustid"><label>AcoustID Key</label><input id="ak" value="" placeholder="输入 Key"><span class="eg">去 <a href="https://acoustid.org/webservice" target="_blank" style="color:var(--md-primary)">acoustid.org/webservice</a> 免费获取</span></div>
 <div class="cfg" id="cfg_netease"><label>网易云 URL</label><input id="nu" placeholder="输入 URL"><span class="eg">https://music.163.com/api/cloudsearch/pc</span><span class="err" id="err_nu">请填写 URL</span></div>
 <div class="cfg" id="cfg_qqmusic"><label>QQ音乐 URL</label><input id="qu" placeholder="输入 URL"><span class="eg">https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span><span class="err" id="err_qu">请填写 URL</span></div>
 <div class="cfg" id="cfg_kugou"><label>酷狗 URL</label><input id="ku" placeholder="输入 URL"><span class="eg">https://songsearch.kugou.com/song_search_v2</span><span class="err" id="err_ku">请填写 URL</span></div>
 <div class="cfg" id="cfg_kuwo"><label>酷我 URL</label><input id="kw" placeholder="输入 URL"><span class="eg">https://kuwo.cn</span><span class="err" id="err_kw">请填写 URL</span></div>
-<button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:8px"><span class="material-symbols-outlined mi">save</span> 保存配置</button></div></div></div><div class="tab-content" id="tab-failed">
+</div><button class="btn btn-sm btn-s" onclick="saveCfg()" style="margin-top:8px"><span class="material-symbols-outlined mi">save</span> 保存配置</button></div></div></div><div class="tab-content" id="tab-failed">
 <div class="card"><h3><span class="material-symbols-outlined mi">warning</span> 失败/跳过列表</h3>
 <div class="tbar"><button onclick="loadFailed()"><span class="material-symbols-outlined mi">refresh</span> 刷新</button><button onclick="clearFailed()"><span class="material-symbols-outlined mi">delete</span> 清空</button></div>
 <div class="slist" id="failedList" style="padding-right:8px"><div style="text-align:center;padding:20px;color:var(--md-on-surface-variant)">点击刷新加载</div></div></div></div><div class="tab-content" id="tab-edit">
@@ -258,21 +259,19 @@ function setupMobile(){
       tg.innerHTML='<span class="material-symbols-outlined mi" style="font-size:14px">more_horiz</span>';
       tbar.appendChild(tg);
     }
-    // --- log: collapsible ---
-    var logCard=document.querySelector("#tab-songs .card:has(h3)")||document.querySelectorAll(".card")[0];
-    var logC=document.querySelector(".card h3")||document.querySelector(".card:last-of-type h3");
+    // --- log: collapsible (default collapsed on mobile) ---
     var logDiv=E("log");
-    if(logDiv&&!document.getElementById("logArrow")){
-      var lh3=document.querySelector(".card h3");
-      // find the log card's h3
+    if(logDiv){
+      // logArrow already exists from desktop HTML — default-collapse on mobile
+      logDiv.style.display="none";
+      var la=E("logArrow"); if(la){la.textContent="▶";la.classList.remove("up")}
+      // find the log h3 and set up toggle
       var h3s=document.querySelectorAll(".card h3");
-      for(var k=0;k<h3s.length;k++){if(h3s[k].textContent.indexOf("日志")>=0){lh3=h3s[k];break}}
-      if(lh3){
-        lh3.style.cursor="pointer";
-        var arrow=document.createElement("span");arrow.id="logArrow";arrow.style.fontSize="10px";arrow.textContent="▼";
-        lh3.appendChild(arrow);
-        lh3.onclick=function(){var l=E("log");if(l)l.style.display=l.style.display==="none"?"block":"none";var a=document.getElementById("logArrow");if(a)a.textContent=E("log").style.display==="none"?"▶":"▼"};
-        logDiv.style.display="none";
+      for(var k=0;k<h3s.length;k++){
+        if(h3s[k].textContent.indexOf("日志")>=0){
+          h3s[k].onclick=function(){var l=E("log");if(l)l.style.display=l.style.display==="none"?"block":"none";var a=E("logArrow");if(a){a.textContent=l.style.display==="none"?"▶":"▼";a.classList.toggle("up",l.style.display!=="none")}};
+          break;
+        }
       }
     }
     // --- advanced settings: collapsible ---
