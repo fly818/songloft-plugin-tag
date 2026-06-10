@@ -21,6 +21,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 .tbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
 .tbar button{padding:4px 14px;border-radius:8px;border:1px solid var(--md-outline);background:var(--md-surface-2);font-size:12px;cursor:pointer;color:var(--md-on-surface)}
 .tbar button:active{background:var(--md-primary-container)}.sep{width:1px;height:20px;background:var(--md-surface-variant);display:inline-block;vertical-align:middle;margin:0 2px}
+.tbar-extra{display:inline-flex;align-items:center;gap:2px}
 .slist{max-height:50vh;overflow-y:auto}
 .srow{display:flex;align-items:center;padding:10px 12px;gap:10px;border-radius:12px;cursor:pointer;color:var(--md-on-surface)}
 .srow:active{background:var(--md-primary-container)}
@@ -68,6 +69,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 .tr-n:hover{background:var(--md-surface-2)}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--md-surface-variant);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 .tab-content{display:none}.tab-content.on{display:block}
+#moreMenu{display:none}
 @media(max-width:600px){
   .sgrid{grid-template-columns:1fr 1fr}
   .ctn{max-width:100%;padding:4px}
@@ -161,7 +163,7 @@ body{background:var(--md-surface-1);color:var(--md-on-surface);font-size:14px;li
 <div class="tbar" style="padding:4px 8px;border-bottom:1px solid var(--md-surface-variant);margin:0;gap:4px" id="tbar">
 <button onclick="showAll()" id="btnAllSongs"><span class="material-symbols-outlined mi">list</span> 全部歌曲</button>
 <button onclick="doScrape()" id="btnScrape" disabled><span class="material-symbols-outlined mi">edit_note</span> 刮削</button>
-<span class="tbar-extra" style="display:inline-flex;align-items:center;gap:2px">
+<span class="tbar-extra">
 <button onclick="selAll()"><span class="material-symbols-outlined mi">check_box</span> 全选</button>
 <button onclick="selNone()"><span class="material-symbols-outlined mi">check_box_outline_blank</span> 清空</button>
 <button onclick="clearScraped()"><span class="material-symbols-outlined mi">delete</span> 清空记录</button>
