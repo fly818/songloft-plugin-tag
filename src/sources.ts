@@ -49,6 +49,32 @@ function isHostnameAllowed(url: string): boolean {
   return true;
 }
 
+// ---- 语言检测（Unicode 范围统计）----
+function detectLanguage(text: string): string {
+  if (!text) return "unknown";
+  let cjk = 0, lat = 0, kana = 0, hangul = 0, other = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x20000 && c <= 0x2A6DF)) cjk++;
+    else if ((c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF)) kana++;
+    else if (c >= 0xAC00 && c <= 0xD7AF) hangul++;
+    else if ((c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A) || (c >= 0xC0 && c <= 0x24F)) lat++;
+    else if (c > 0x7F) other++;
+  }
+  const total = cjk + kana + hangul + lat + other || 1;
+  if (cjk / total > 0.3) return kana / total > 0.1 ? "ja" : "zh";
+  if (kana / total > 0.3) return "ja";
+  if (hangul / total > 0.3) return "ko";
+  if (lat / total > 0.5) return "en";
+  return "unknown";
+}
+
+// ---- 模板变量系统（${...} 语法）----
+export function resolveTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\$\{([^}]+)\}/g, (_: string, key: string) => vars[key.trim()] || "");
+}
+
+// ----
 // ---- 指数退避重试（弱网减少失败率）----
 async function fetchWithRetry(
   url: string,
@@ -80,6 +106,8 @@ export interface ScraperConfig {
   qqmusic_api_url: string;        // 示例: https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp
   enable_kugou: boolean;
   kugou_api_url: string;          // 示例: https://songsearch.kugou.com/song_search_v2
+  enable_kuwo: boolean;
+  kuwo_api_url: string;           // 示例: https://kuwo.cn
 }
 
 export const DEFAULT_CONFIG: ScraperConfig = {
@@ -91,6 +119,8 @@ export const DEFAULT_CONFIG: ScraperConfig = {
   qqmusic_api_url: '',
   enable_kugou: false,
   kugou_api_url: '',
+  enable_kuwo: false,
+  kuwo_api_url: '',
 };
 
 // ---- 搜索结果类型 ----
@@ -291,6 +321,97 @@ export async function searchKuGou(keyword: string, apiUrl: string): Promise<Sear
   }
 }
 
+
+// ---- 咪咕音乐（v1 API）----
+const MIGU_KEY = [0x4A, 0x6B, 0x38, 0x71, 0x7A, 0x75, 0x65, 0x50, 0x69, 0x4A, 0x31, 0x71, 0x45, 0x33, 0x6D, 0x44, 0x59, 0x68, 0x4C, 0x51, 0x33, 0x54, 0x37, 0x33, 0x44, 0x74, 0x44, 0x6F, 0x41, 0x68, 0x4C, 0x50];
+
+function miguDecrypt(data: Uint8Array): string {
+  const seed = data[3];
+  const result: number[] = [];
+  const keyLen = MIGU_KEY.length;
+  for (let i = 4; i < data.length; i++) {
+    result.push((data[i] + seed - MIGU_KEY[(i - 4) % keyLen]) & 0xFF);
+  }
+  return String.fromCharCode(...result);
+}
+
+export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
+  try {
+    const params = new URLSearchParams({
+      text: keyword,
+      pageNo: '1',
+      pageSize: '10',
+      isCopyright: '1',
+      sort: '1',
+      searchSwitch: JSON.stringify({ song: 1, album: 0, singer: 0, tagSong: 1, mvSong: 0, bestShow: 1 }),
+    });
+    const rt = await fetchWithRetry(
+      `https://c.musicapp.migu.cn/v1.0/content/search_all.do?${params.toString()}`,
+      {
+        headers: {
+          'ua': 'Android_migu',
+          'version': '6.8.8',
+          'channel': '014021I',
+          'User-Agent': 'Mozilla/5.0',
+          'Referer': 'https://h5.nf.migu.cn/',
+        },
+      }
+    );
+    if (!rt.ok) return [];
+    const resp = rt.resp;
+    if (!resp.ok) return [];
+
+    const raw = new Uint8Array(await resp.arrayBuffer());
+    const isEncrypted = String.fromCharCode(raw[0], raw[1], raw[2]) === '\xAB\xCD\x01';
+    const body = isEncrypted ? JSON.parse(miguDecrypt(raw)) : JSON.parse(new TextDecoder().decode(raw));
+
+    const songs = body?.songResultData?.result || [];
+    return songs.map((s: any) => ({
+      artist: (s.singers || []).map((si: any) => si.name).join(',') || '',
+      title: s.name || '',
+      album: (s.albums || []).map((a: any) => a.name).join(',') || s.album || '',
+      cover_url: s.imgItems?.[s.imgItems.length - 1]?.img ? `https://d.musicapp.migu.cn${s.imgItems[s.imgItems.length - 1].img}` : undefined,
+      sourceId: s.contentId ? String(s.contentId) : undefined,
+      release_date: undefined,
+      score: 0,
+      source: 'migu',
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ---- 酷我音乐（v2 API）----
+export async function searchKuWo(keyword: string): Promise<SearchResult[]> {
+  try {
+    const url = `https://kuwo.cn/search/searchMusicBykeyWord?vipver=1&client=kt&ft=music&cluster=0&strategy=2012&encoding=utf8&rformat=json&mobi=1&issubtitle=1&show_copyright_off=1&pn=0&rn=10&all=${encodeURIComponent(keyword)}`;
+    const rt = await fetchWithRetry(url, {
+      headers: {
+        'Referer': 'https://kuwo.cn/',
+        'User-Agent': 'Mozilla/5.0',
+      },
+    });
+    if (!rt.ok) return [];
+    const resp = rt.resp;
+    if (!resp.ok) return [];
+
+    const data = await resp.json();
+    const songs = data?.abslist || [];
+    return songs.map((s: any) => ({
+      artist: s.ARTIST || '',
+      title: s.NAME || '',
+      album: s.ALBUM || '',
+      cover_url: s.hts_MVPIC || (s.web_albumpic_short ? `https://img1.kuwo.cn/star/albumcover/${s.web_albumpic_short}` : undefined),
+      sourceId: s.MUSICRID ? String(s.MUSICRID) : undefined,
+      release_date: undefined,
+      score: 0,
+      source: 'kuwo',
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // ============================================================
 // 歌词下载
 // ============================================================
@@ -399,11 +520,10 @@ export async function enrichFromChineseSources(
 
   const allResults: SearchResult[] = [];
 
-  const addSource = async (
-    fn: (kw: string, url: string) => Promise<SearchResult[]>,
-    url: string,
-    sourceName: string
-  ) => {
+  // 并发去国内源搜索（与文本兜底一致的五源并发）
+  const tasks: Promise<SearchResult[]>[] = [];
+
+  const searchWithScoring = async (fn: (kw: string, url: string) => Promise<SearchResult[]>, url: string, sourceName: string) => {
     if (!url) return;
     try {
       const results = await fn(keyword, url);
@@ -417,18 +537,39 @@ export async function enrichFromChineseSources(
     } catch (e: any) {
       songloft.log.warn(`[enrich] ${sourceName} 搜索异常: ${e.message || e}`);
     }
-    await sleep(50);
   };
 
+  const enrichTasks: Promise<void>[] = [];
   if (cfg.enable_netease && cfg.netease_api_url) {
-    await addSource(searchNetease, cfg.netease_api_url, 'netease');
+    enrichTasks.push(searchWithScoring(searchNetease, cfg.netease_api_url, 'netease'));
   }
   if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-    await addSource(searchQQMusic, cfg.qqmusic_api_url, 'qqmusic');
+    enrichTasks.push(searchWithScoring(searchQQMusic, cfg.qqmusic_api_url, 'qqmusic'));
   }
   if (cfg.enable_kugou && cfg.kugou_api_url) {
-    await addSource(searchKuGou, cfg.kugou_api_url, 'kugou');
+    enrichTasks.push(searchWithScoring(searchKuGou, cfg.kugou_api_url, 'kugou'));
   }
+  // 咪咕（需签名）和酷我（无需配置项），按开关启用
+  enrichTasks.push((async () => {
+    try {
+      const results = await searchMiGu(keyword);
+      for (const r of results) { r.score = scoreMatch(candidate, r); }
+      if (results.length > 0) songloft.log.info(`[enrich] migu 返回 ${results.length} 条`);
+      allResults.push(...results);
+    } catch (e: any) { songloft.log.warn(`[enrich] migu 搜索异常: ${e.message || e}`); }
+  })());
+  if (cfg.enable_kuwo) {
+    enrichTasks.push((async () => {
+      try {
+        const results = await searchKuWo(keyword);
+        for (const r of results) { r.score = scoreMatch(candidate, r); }
+        if (results.length > 0) songloft.log.info(`[enrich] kuwo 返回 ${results.length} 条`);
+        allResults.push(...results);
+      } catch (e: any) { songloft.log.warn(`[enrich] kuwo 搜索异常: ${e.message || e}`); }
+    })());
+  }
+
+  await Promise.allSettled(enrichTasks);
 
   // 选最高分
   let best: SearchResult | null = null;

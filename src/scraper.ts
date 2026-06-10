@@ -9,6 +9,8 @@ import {
   searchNetease,
   searchQQMusic,
   searchKuGou,
+  searchMiGu,
+  searchKuWo,
   enrichFromChineseSources,
   extractCandidate,
   loadConfig,
@@ -163,7 +165,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
       }
   }
 
-  // 3. 文本搜索兜底
+  // 3. 文本搜索兜底（多源并发）
   const sourceScores: Record<string, number> = {};
   const allResults: SearchResult[] = [];
 
@@ -178,20 +180,28 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     allResults.push(...results);
   };
 
+  // 并发查询所有已启用的源
+  const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
+
   if (cfg.enable_netease && cfg.netease_api_url) {
-    const r = await searchNetease(keyword, cfg.netease_api_url);
-    addSourceResults(r, 'netease');
-    await sleep(50);
+    tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({ results: r, source: 'netease' as const })));
   }
   if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-    const r = await searchQQMusic(keyword, cfg.qqmusic_api_url);
-    addSourceResults(r, 'qqmusic');
-    await sleep(50);
+    tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({ results: r, source: 'qqmusic' as const })));
   }
   if (cfg.enable_kugou && cfg.kugou_api_url) {
-    const r = await searchKuGou(keyword, cfg.kugou_api_url);
-    addSourceResults(r, 'kugou');
-    await sleep(50);
+    tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({ results: r, source: 'kugou' as const })));
+  }
+  tasks.push(searchMiGu(keyword).then(r => ({ results: r, source: 'migu' as const })));
+  if (cfg.enable_kuwo) {
+    tasks.push(searchKuWo(keyword).then(r => ({ results: r, source: 'kuwo' as const })));
+  }
+
+  const settled = await Promise.allSettled(tasks);
+  for (const s of settled) {
+    if (s.status === 'fulfilled') {
+      addSourceResults(s.value.results, s.value.source);
+    }
   }
 
   // 日志输出各源得分

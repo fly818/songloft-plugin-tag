@@ -115,6 +115,7 @@ router.put('/config', async (req) => {
     merged.enable_netease  = !!(merged.netease_api_url);
     merged.enable_qqmusic  = !!(merged.qqmusic_api_url);
     merged.enable_kugou    = !!(merged.kugou_api_url);
+    merged.enable_kuwo     = !!(merged.kuwo_api_url);
 
     if (merged.netease_api_url && isBadHost(merged.netease_api_url)) {
       songloft.log.warn('[ssrf] 拦截内网 URL: ' + merged.netease_api_url);
@@ -203,6 +204,21 @@ router.get('/config/status', async (_req) => {
         const data = await resp.json();
         result['kugou'] = data?.data?.lists !== undefined;
       } catch { result['kugou'] = false; }
+    })());
+  }
+
+  // 酷我（直接测 kuwo.cn）
+  if (cfg.enable_kuwo) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(
+          `https://kuwo.cn/search/searchMusicBykeyWord?vipver=1&client=kt&ft=music&cluster=0&strategy=2012&encoding=utf8&rformat=json&mobi=1&pn=0&rn=1&all=test`,
+          { headers: { 'Referer': 'https://kuwo.cn/', 'User-Agent': 'Mozilla/5.0' } }
+        );
+        if (!resp.ok) { result['kuwo'] = false; return; }
+        const data = await resp.json();
+        result['kuwo'] = data?.abslist !== undefined;
+      } catch { result['kuwo'] = false; }
     })());
   }
 

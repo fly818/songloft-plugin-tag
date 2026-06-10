@@ -138,6 +138,8 @@ export const SOURCE_WEIGHTS: Record<string, number> = {
   netease: 1.0,
   qqmusic: 0.95,
   kugou: 0.85,
+  migu: 0.82,
+  kuwo: 0.80,
 };
 
 /**

@@ -7,16 +7,30 @@
 - **多级目录浏览**：Songs Tab 全新左窗格目录树 + 面包屑导航，按真实 `file_path` 目录结构递归展开，支持任意层级深度。点击目录节点筛选歌曲，面包屑可回退
 - **全部歌曲按钮**：工具栏新增「全部歌曲」按钮，一键显示所有歌曲（不走目录筛选）
 - **歌曲列表文件格式**：歌曲列表和编辑页显示文件格式（mp3/flac/ape 等），跟在时长后面
-- **fetchWithRetry 指数退避**：5 个外部 fetch（AcoustID/MusicBrainz/网易云/QQ音乐/酷狗）均已包装重试逻辑（2次重试，1s-2s-4s 延迟），降低弱网失败率
+- **fetchWithRetry 指数退避**：所有外部 fetch（AcoustID/MusicBrainz/网易云/QQ音乐/酷狗）均已包装重试逻辑（2次重试，1s-2s-4s 延迟），降低弱网失败率
+- **五源并发搜索**：文本搜索从串行改为 `Promise.allSettled` 五源并发（网易云/QQ音乐/酷狗/酷我/咪咕），速度提升 3-5 倍
+- **酷我音乐源**：新增酷我（KuWo）歌曲搜索源，v2 API 无签名验证，直接可用
+- **咪咕音乐源**：接入咪咕 v1 API（XOR 解密），暂需签名算法完善
+- **模板变量系统**：`resolveTemplate("${artist} - ${title}", vars)` 正则替换语法
+- **语言检测**：`detectLanguage(text)` 返回 zh/ja/ko/en/unknown
+- **MD 文档弹窗**：Header 新增「📖 README」+「📝 改动日志」按钮，从 GitHub raw 拉取并渲染 Markdown
+- **经典文件管理器布局**：单卡片无缝式左右分栏，底部状态栏，响应式适配平板和手机
+- **短音频过滤**：时长 < 30s 的音频自动隐藏
+- **清除封面按钮**：工具栏新增「清除封面」按钮 + `POST /cover/clear/:id` 端点（需主程序 v2.7.1+）
 
 ### 修复
 - **低分歌曲全部失败**：评分阈值 0.8→0.7，提高文本相似度通过率
-- **skipped 误入失败列表**：`_sc()` 函数只记真正的 `failed` 状态；`batch()` 和 `resumeBatch()` 不再将无匹配结果（skippedIds）记入失败
+- **skipped 误入失败列表**：`_sc()` 函数只记真正的 `failed` 状态；`batch()` 和 `resumeBatch()` 不再将无匹配结果记入失败
 - **文件名噪音清洗**：剥离 `[FLAC]`/`[320k]`/`[HQ]`/`[无损]`/`[MV]` 等音质标签和 `(Live)`/`(Remix)`/`(Cover)`/`(伴奏)` 等版本标识，去除 `feat.`/`ft.` 合作艺人后缀
 - **CD 翻录垃圾元数据处理**：DB 标题为 `Track 01`/`trad`/`unknown` 或艺术家为 `佚名`/`unknown` 时，自动退回文件名提取候选标签
-- **编辑页无法载入歌曲**：`loadEditView` 改用全量数据源 `S._allSongs`，不再因目录筛选导致编辑页空白
-- **失败页跳转修复**：从失败 Tab 的重试弹窗不再跳转到歌曲 Tab，停留在当前页面
+- **编辑页/失败页修复**：编辑页不再因目录筛选导致空白；失败页重试弹窗不再跳转到歌曲 Tab
 - **指纹异常降级**：主程序 Chromaprint 指纹被二进制垃圾+歌词文本污染时，插件侧 `fingerprint.length > 1000` 自动降级到文本搜索
+- **安全加固**：`escH` 转义单引号、IPv6 方括号 SSRF 拦截、innerHTML XSS 修复、`clearFailed` 增加确认弹窗
+- **文件管理器布局修复**：清除孤儿 `<div class="ptxt">` 和多余 `</div>` 导致日志/刮削源跑到其他标签页
+
+### 开发体验
+- Header 新增「📖 README」+「📝 改动日志」按钮，从 GitHub raw 拉取 MD 并弹窗渲染
+- 页面 Header 显示当前版本号 v1.0.6
 
 ### 主程序联动
 - **Go 后端 #145 修复**：`WriteTags` handler 下载封面失败或传空 `cover_url` 时清除旧 CoverPath/CoverURL，根除 v1.0.4 损坏封面永久残留问题（重新刮削即可覆盖）
