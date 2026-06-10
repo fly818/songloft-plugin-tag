@@ -37,16 +37,7 @@
 
 ### 国内音源（需配置 API URL）
 
-在「刮削源」区域填入 API URL 后保存，系统自动检测连通性（绿色=可达，红色=不可达）。
-
-| 音源 | 示例 URL |
-|------|------|
-| 网易云 | `https://music.163.com/api/cloudsearch/pc` |
-| QQ音乐 | `https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp` |
-| 酷狗 | `https://songsearch.kugou.com/song_search_v2` |
-| 酷我 | `https://kuwo.cn` |
-
-清空 URL 再保存会自动关闭该音源。
+在「刮削源」区域填入 API URL 后保存，系统自动检测连通性（绿色=可达，红色=不可达）。清空 URL 再保存会自动关闭该音源。
 
 ### 声纹匹配（推荐）
 

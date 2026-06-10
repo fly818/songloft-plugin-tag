@@ -9,7 +9,7 @@
 - **歌曲列表文件格式**：歌曲列表和编辑页显示文件格式（mp3/flac/ape 等），跟在时长后面
 - **fetchWithRetry 指数退避**：所有外部 API 调用均已包装重试逻辑（2次重试，1s-2s-4s 延迟），降低弱网失败率
 - **多源并发搜索**：文本搜索从串行改为 `Promise.allSettled` 多源并发，速度提升 3-5 倍
-- **新增国内源**：搜索源从 3 个扩展到 5 个（原有三源 + 酷我 + 咪咕框架），酷我已可用
+- **新增国内源**：搜索源从 3 个扩展到 5 个，均已可用
 - **模板变量系统**：`resolveTemplate("${artist} - ${title}", vars)` 正则替换语法
 - **语言检测**：`detectLanguage(text)` 返回 zh/ja/ko/en/unknown
 - **MD 文档弹窗**：Header 新增「📖 README」+「📝 改动日志」按钮，从 GitHub raw 拉取并渲染 Markdown
