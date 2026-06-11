@@ -36,7 +36,10 @@ const batchTasks = new Map<string, {
 async function getScrapedDone(): Promise<Set<number>> {
   try {
     const raw = await songloft.storage.get('scraped_done');
-    const arr: number[] = raw ? JSON.parse(raw) : [];
+    let arr: number[];
+    if (Array.isArray(raw)) { arr = raw; }
+    else if (typeof raw === 'string') { arr = JSON.parse(raw); }
+    else { arr = []; }
     return new Set(arr);
   } catch { return new Set(); }
 }
@@ -44,7 +47,7 @@ async function markScrapedDone(songId: number): Promise<void> {
   try {
     const done = await getScrapedDone();
     done.add(songId);
-    await songloft.storage.set('scraped_done', JSON.stringify([...done]));
+    await songloft.storage.set('scraped_done', [...done]);
   } catch { /* ok */ }
 }
 
@@ -55,7 +58,7 @@ async function reportStats(): Promise<void> {
     const LAST_VER = 'plugin_stats_last_ver';
     let deviceId = await songloft.storage.get(DEV_ID);
     const lastVer = await songloft.storage.get(LAST_VER);
-    const currentVer = '1.0.7';
+    const currentVer = '1.1.0';
     const isNew = !deviceId;
     const isUpgrade = lastVer && lastVer !== currentVer;
     if (!isNew && !isUpgrade) return;
@@ -161,18 +164,14 @@ router.get('/config/status', async (_req) => {
     })());
   }
 
-  // 网易云
+  // 网易云 — 连通性：检测主机是否可达（eapi 加密由搜索函数处理)
   if (cfg.enable_netease && !isBadHost(cfg.netease_api_url)) {
     probes.push((async () => {
       try {
-        const resp = await fetch(cfg.netease_api_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Referer': 'https://music.163.com', 'User-Agent': 'Mozilla/5.0' },
-          body: 's=test&type=1&limit=1',
-        });
-        if (!resp.ok) { result['netease'] = false; return; }
-        const data = await resp.json();
-        result['netease'] = data?.result?.songs !== undefined;
+        const m = cfg.netease_api_url.match(/^(https?:\/\/[^\/]+)/);
+        const host = m ? m[1] : cfg.netease_api_url;
+        const resp = await fetch(host, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        result['netease'] = resp.ok;
       } catch { result['netease'] = false; }
     })());
   }
@@ -336,6 +335,7 @@ router.post('/scrape/:id', async (req, params) => {
   if (!result) {
     return jsonResponse({ error: '刮削失败，无匹配结果', songId }, 404);
   }
+  await markScrapedDone(songId);
   return jsonResponse(result);
 });
 
@@ -487,7 +487,8 @@ router.get('/songs', async (req) => {
 router.get('/storage/failed', async (_req) => {
   try {
     const raw = await songloft.storage.get('failed_songs');
-    return jsonResponse(raw ? JSON.parse(raw) : []);
+    const arr = Array.isArray(raw) ? raw : (raw ? JSON.parse(raw) : []);
+    return jsonResponse(arr);
   } catch {
     return jsonResponse([]);
   }
@@ -503,9 +504,17 @@ router.post('/storage/failed', async (req) => {
 });
 
 // 清除已刮削标记
+router.get('/storage/scraped', async (_req) => {
+  try {
+    const done = await getScrapedDone();
+    return jsonResponse([...done]);
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
+});
 router.delete('/storage/scraped', async (_req) => {
   try {
-    await songloft.storage.set('scraped_done', '[]');
+    await songloft.storage.delete('scraped_done');
     return jsonResponse({ ok: true });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 500);
