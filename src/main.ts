@@ -319,7 +319,7 @@ router.get('/scrape/batch/progress', async (req) => {
     failed: task.failed,
     lastLog: latest ? `${latest.artist} - ${latest.title} | ${latest.source} | ${latest.fileWriteStatus}` : null,
     loggedCount: task.results.length + task.skippedIds.length + task.failedIds.length,
-    results: task.status === 'done' ? task.results : undefined,
+    results: task.results,
     skippedIds: task.skippedIds.length ? task.skippedIds : undefined,
     failedIds: task.failedIds.length ? task.failedIds : undefined,
   });
