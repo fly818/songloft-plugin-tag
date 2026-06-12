@@ -142,18 +142,22 @@ export interface SearchResult {
 // ---- AcoustID / MusicBrainz ----
 // 使用主程序已计算的 Chromaprint fingerprint，无需插件自行安装 fpcalc。
 export async function searchAcoustid(fingerprint: string, duration: number, apiKey: string): Promise<SearchResult[]> {
-  // 防御：主程序 v2.6.3 指纹存为原始二进制，JSON 序列化损坏后体积巨大
-  // 正常指纹 ~200 字符，损坏的二进制指纹会 >1000 字符，直接跳过避免 414
-  if (!fingerprint || fingerprint.length > 1000) {
-    songloft.log.warn(`[acoustid] 指纹异常(len=${fingerprint?.length||0})，可能是主程序二进制存储问题，降级到文本搜索`);
+  if (!fingerprint) {
+    songloft.log.warn('[acoustid] 歌曲无指纹，降级到文本搜索');
     return [];
   }
 
   try {
-    const qs = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(duration)}&fingerprint=${encodeURIComponent(fingerprint)}&meta=recordingids`;
+    // 使用 POST 避免指纹过长导致 URL 414（Chromaprint base64 指纹长度与歌曲时长成正比）
+    const body = `client=${encodeURIComponent(apiKey)}&duration=${Math.round(duration)}&fingerprint=${encodeURIComponent(fingerprint)}&meta=recordingids`;
 
-    const rt = await fetchWithRetry(`https://api.acoustid.org/v2/lookup?${qs}`, {
-      headers: { 'User-Agent': 'songloft-plugin-tag/1.0' },
+    const rt = await fetchWithRetry('https://api.acoustid.org/v2/lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'songloft-plugin-tag/1.0',
+      },
+      body,
     });
     if (!rt.ok) return [];
     const resp = rt.resp;

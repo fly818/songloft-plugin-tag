@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1 (2026-06-12)
+
+### 修复
+- **AcoustID 指纹搜索修复**：移除 `fingerprint.length > 1000` 误判阈值（v2.8.0 修复后 Chromaprint 指纹为有效 base64，长度与歌曲时长成正比，268秒歌曲指纹约8000字符）
+- **AcoustID API 改用 POST**：指纹作为 URL 参数会导致 GET 请求超过 URL 长度限制（414），改为 POST form 提交
+
+### 说明
+- 主程序 v2.8.0 已修复 ffmpeg chromaprint 指纹被歌词/元数据污染的问题（`-map 0:a:0 -map_metadata -1`）
+- 升级后需从主程序管理界面触发指纹重新计算（`/api/v1/scan/fingerprints` + `recompute_all=true`），使 AcoustID 声纹匹配正常工作
+
+---
+
 ## v1.1.0 (2026-06-12)
 
 ### UI 全面重构
