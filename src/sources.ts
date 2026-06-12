@@ -682,6 +682,18 @@ export async function enrichFromChineseSources(
 
   songloft.log.info(`[enrich] 选用 ${best.source} (${bestScore.toFixed(2)})`);
 
+  // 如果最佳结果没有封面，从其他结果中找有封面的
+  let coverUrl = best.cover_url;
+  if (!coverUrl) {
+    for (const r of allResults) {
+      if (r.cover_url) {
+        coverUrl = r.cover_url;
+        songloft.log.info(`[enrich] 最佳结果无封面，fallback 到 ${r.source} 的封面`);
+        break;
+      }
+    }
+  }
+
   // 拉歌词
   let lyrics = '';
   if (best.sourceId) {
@@ -696,7 +708,7 @@ export async function enrichFromChineseSources(
   }
 
   return {
-    cover_url: best.cover_url,
+    cover_url: coverUrl,
     lyrics,
     source: best.source,
   };
