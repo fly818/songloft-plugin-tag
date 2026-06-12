@@ -5,13 +5,14 @@
   "author": "Songloft Team",
   "entryPath": "tag",
   "main": "main.js",
+  "icon": "icon.svg",
   "minHostVersion": "2.5.0",
   "permissions": [
     "storage",
     "songs.read"
   ],
   "entryHash": "95af50fa1c93f09433ee3a3bf84a75fa574923c1b5c56e25d7f79787ba9e8789",
-  "zipHash": "9d746c10c171e049159178f36cfe8d5e42724ba7bde20cb9abd76ec592a8734b",
+  "zipHash": "f1eebe8efc4fb025afe4644976140c437df5de8acbb0bd59aade711777fe4007",
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/plugin.json",
   "download_url": "https://github.com/songloft-org/songloft-plugin-tag/releases/download/v1.1.2/tag.jsplugin.zip"
 }
