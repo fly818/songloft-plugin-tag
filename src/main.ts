@@ -390,13 +390,13 @@ router.get('/song/:id', async (_req, params) => {
         }
       } catch { /* ignore */ }
     }
-    // 构建带认证的封面 URL（本地 cover 需 access_token，外链不需要）
+    // 构建带认证的封面 URL（本地 cover 用相对路径 + access_token，外链直接用）
     let coverUrl = '';
     if (s.cover_url) {
       if (s.cover_url.startsWith('http://') || s.cover_url.startsWith('https://')) {
         coverUrl = s.cover_url;
       } else {
-        coverUrl = `${host}${s.cover_url}?access_token=${token}`;
+        coverUrl = `${s.cover_url}?access_token=${token}`;
       }
     }
     return jsonResponse({

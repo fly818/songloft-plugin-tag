@@ -10,6 +10,9 @@
 - 主程序 v2.8.0 已修复 ffmpeg chromaprint 指纹被歌词/元数据污染的问题（`-map 0:a:0 -map_metadata -1`）
 - 升级后需从主程序管理界面触发指纹重新计算（`/api/v1/scan/fingerprints` + `recompute_all=true`），使 AcoustID 声纹匹配正常工作
 
+### 修复
+- **编辑框封面不显示**：cover_url 使用 `host` 前缀（`http://localhost:58091`）构造完整 URL，远程浏览器无法加载。改为相对路径，由浏览器根据当前 origin 自动解析
+
 ---
 
 ## v1.1.0 (2026-06-12)
