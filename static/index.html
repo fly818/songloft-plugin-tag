@@ -7,90 +7,96 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0,0&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap">
 <style>
+:root{
+  --bg:var(--md-surface);--bg-1:var(--md-surface-1);--bg-2:var(--md-surface-2);
+  --tx:var(--md-on-surface);--tx-2:var(--md-on-surface-variant);
+  --brd:var(--md-outline-variant);--brd-2:var(--md-outline);
+  --accent:#D4A574;--error:var(--md-error);--ok:var(--md-success);--warn:var(--md-warning);
+}
+html[data-theme="light"]{--tx-2:#5A5A5A;--brd:#B0B0B0;--brd-2:#888}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0C0C1D;color:#E0E0EC;font-size:14px;line-height:1.65;overflow:hidden;font-family:'Montserrat',sans-serif;font-weight:400}
-body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overflow:hidden;font-family:'Montserrat',sans-serif;font-weight:400}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(212,165,116,.15);border-radius:2px}
 .mi{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;vertical-align:middle;line-height:1}
-.gold{color:#D4A574}
+.gold{color:var(--accent)}
 
-.hdr{position:relative;z-index:10;background:rgba(12,12,29,.95);border-bottom:1px solid rgba(255,255,255,.06);padding:8px 40px;display:flex;align-items:center;gap:12px;max-width:980px;margin:0 auto;width:100%}
+.hdr{position:relative;z-index:10;background:var(--bg);border-bottom:1px solid var(--brd);padding:8px 40px;display:flex;align-items:center;gap:12px;max-width:980px;margin:0 auto;width:100%}
 .hdr .logo{font-family:'Cormorant',serif;font-size:18px;font-weight:600;display:flex;align-items:center;gap:6px;letter-spacing:.5px}
-.hdr .logo .mi{font-size:20px;color:#D4A574}
+.hdr .logo .mi{font-size:20px;color:var(--accent)}
 .hdr .ver{font-size:10px;opacity:.3;margin-left:4px}
 .hdr .spacer{flex:1}
-.tabs{display:flex;gap:1px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:2px}
-.tabs button{padding:5px 14px;border:none;background:none;color:rgba(255,255,255,.3);font-size:10px;font-family:'Montserrat';font-weight:500;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.tabs button.on{background:rgba(212,165,116,.1);color:#D4A574;border-bottom:2px solid #D4A574}
-.tabs button:hover:not(.on){color:rgba(255,255,255,.6)}
-.hdr-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.06);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;border-radius:4px}
-.hdr-btn:hover{color:#D4A574;border-color:rgba(212,165,116,.3)}
+.tabs{display:flex;gap:1px;background:var(--bg-2);border:1px solid var(--brd);padding:2px}
+.tabs button{padding:5px 14px;border:none;background:none;color:var(--tx-2);font-size:10px;font-family:'Montserrat';font-weight:500;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.tabs button.on{background:rgba(212,165,116,.1);color:var(--accent);border-bottom:2px solid var(--accent)}
+.tabs button:hover:not(.on){color:var(--tx)}
+.hdr-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--brd);background:transparent;color:var(--tx-2);cursor:pointer;transition:all .2s;border-radius:4px}
+.hdr-btn:hover{color:var(--accent);border-color:rgba(212,165,116,.3)}
 
 #app{position:relative;z-index:1;display:flex;justify-content:center;height:calc(100vh - 46px);padding:0 40px}
 
 .b-layout{display:flex;height:100%;max-width:900px;width:100%}
-.b-sidebar{width:180px;background:rgba(255,255,255,.02);border-right:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-.b-sidebar .shd{padding:8px 10px;font-size:9px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.b-sidebar{width:180px;background:var(--bg-2);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.b-sidebar .shd{padding:8px 10px;font-size:9px;color:var(--tx-2);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;font-weight:600}
 .b-sidebar .stree{flex:1;overflow-y:auto;padding:4px 3px}
-.b-tn{padding:4px 6px;cursor:pointer;border-radius:3px;color:rgba(255,255,255,.35);font-size:11px;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.b-tn:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.03)}
-.b-tn.sel{color:#D4A574;font-weight:500}
+.b-tn{padding:4px 6px;cursor:pointer;border-radius:3px;color:var(--tx-2);font-size:11px;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-tn:hover{color:var(--tx);background:var(--bg-2)}
+.b-tn.sel{color:var(--accent);font-weight:500}
 .b-tn .mi{font-size:13px;flex-shrink:0}
 .b-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
-.stats-strip{display:flex;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
-.stat-item{flex:1;padding:8px 16px;text-align:center;border-right:1px solid rgba(255,255,255,.08)}
+.stats-strip{display:flex;border-bottom:1px solid var(--brd);flex-shrink:0}
+.stat-item{flex:1;padding:8px 16px;text-align:center;border-right:1px solid var(--brd)}
 .stat-item .num{font-family:'Cormorant',serif;font-size:22px;font-weight:600}
-.stat-item .lbl{font-size:9px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
-.stat-item.ok .num{color:#D4A574}.stat-item.err .num{color:#E07A5F}.stat-item.warn .num{color:#C9B458}
+.stat-item .lbl{font-size:9px;color:var(--tx-2);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.stat-item.ok .num{color:var(--accent)}.stat-item.err .num{color:var(--error)}.stat-item.warn .num{color:var(--warn)}
 
-.toolbar{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
+.toolbar{padding:8px 14px;border-bottom:1px solid var(--brd);flex-shrink:0}
 .search-row{display:flex;gap:6px;margin-bottom:6px}
-.search-row input{flex:1;padding:8px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.08);font-size:12px;font-family:'Montserrat';outline:none;background:transparent;color:#E0E0EC;transition:all .2s;font-weight:300}
+.search-row input{flex:1;padding:8px 12px;border-radius:4px;border:1px solid var(--brd-2);font-size:12px;font-family:'Montserrat';outline:none;background:transparent;color:var(--tx);transition:all .2s;font-weight:300}
 .search-row input:focus{border-color:rgba(212,165,116,.4)}
-.search-row input::placeholder{color:rgba(255,255,255,.2);font-style:italic}
-.search-row .btn-s{padding:7px 10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;display:flex;align-items:center;transition:all .2s;border-radius:4px}
-.search-row .btn-s:hover{color:#D4A574;border-color:rgba(212,165,116,.3)}
-.bc{font-size:10px;color:rgba(255,255,255,.3);margin-bottom:6px;font-weight:300;letter-spacing:.3px;width:100%}
+.search-row input::placeholder{color:var(--tx-2);font-style:italic}
+.search-row .btn-s{padding:7px 10px;border:1px solid var(--brd-2);background:transparent;color:var(--tx-2);cursor:pointer;display:flex;align-items:center;transition:all .2s;border-radius:4px}
+.search-row .btn-s:hover{color:var(--accent);border-color:rgba(212,165,116,.3)}
+.bc{font-size:10px;color:var(--tx-2);margin-bottom:6px;font-weight:300;letter-spacing:.3px;width:100%}
 .actions-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
-.actions-row .sep{width:1px;height:16px;background:rgba(255,255,255,.06);margin:0 3px}
-.ab{padding:5px 12px;border:1px solid rgba(255,255,255,.08);background:transparent;font-size:11px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:4px;font-family:'Montserrat';font-weight:400;letter-spacing:.3px;border-radius:3px}
-.ab:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.8)}
-.ab.pri{background:rgba(212,165,116,.1);color:#D4A574;border-color:rgba(212,165,116,.25);font-weight:600}
-.ab.danger{color:#E07A5F;border-color:rgba(224,122,95,.2)}
+.actions-row .sep{width:1px;height:16px;background:var(--brd);margin:0 3px}
+.ab{padding:5px 12px;border:1px solid var(--brd-2);background:transparent;font-size:11px;color:var(--tx-2);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:4px;font-family:'Montserrat';font-weight:400;letter-spacing:.3px;border-radius:3px}
+.ab:hover{border-color:var(--brd);color:var(--tx)}
+.ab.pri{background:rgba(212,165,116,.1);color:var(--accent);border-color:rgba(212,165,116,.25);font-weight:600}
+.ab.danger{color:var(--error);border-color:rgba(224,122,95,.2)}
 
-.bar-bottom{border-top:1px solid rgba(255,255,255,.05);padding:4px 12px;font-size:10px;color:rgba(255,255,255,.25);display:flex;justify-content:space-between;flex-shrink:0;font-weight:300;letter-spacing:.3px;width:100%}
-.pbar{height:2px;background:rgba(255,255,255,.05);flex-shrink:0}
-.pfill{height:100%;background:linear-gradient(90deg,#D4A574,#C9B458);width:0;transition:width .3s}
-.logwrap{border-top:1px solid rgba(255,255,255,.05);flex-shrink:0;width:100%}
-.loghead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;cursor:pointer;user-select:none;font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.5px;text-transform:uppercase;font-weight:500}
-.loghead .badge{background:rgba(212,165,116,.08);color:#D4A574;font-size:9px;padding:1px 5px;border-radius:2px;margin-left:4px}
+.bar-bottom{border-top:1px solid var(--brd);padding:4px 12px;font-size:10px;color:var(--tx-2);display:flex;justify-content:space-between;flex-shrink:0;font-weight:300;letter-spacing:.3px;width:100%}
+.pbar{height:2px;background:var(--brd);flex-shrink:0}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--warn));width:0;transition:width .3s}
+.logwrap{border-top:1px solid var(--brd);flex-shrink:0;width:100%}
+.loghead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;cursor:pointer;user-select:none;font-size:10px;color:var(--tx-2);letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+.loghead .badge{background:rgba(212,165,116,.08);color:var(--accent);font-size:9px;padding:1px 5px;border-radius:2px;margin-left:4px}
 .logbody{display:none;max-height:100px;overflow:hidden}.logbody.open{display:block}
-.log-content{background:rgba(0,0,0,.2);margin:0 12px 6px;border-radius:4px;padding:6px 10px;font-size:10px;font-family:'Fira Code','JetBrains Mono',monospace;color:rgba(255,255,255,.3);line-height:1.6;max-height:80px;overflow-y:auto}
-.log-content .ok{color:#D4A574}.log-content .e{color:#E07A5F}
+.log-content{background:var(--bg-2);margin:0 12px 6px;border-radius:4px;padding:6px 10px;font-size:10px;font-family:'Fira Code','JetBrains Mono',monospace;color:var(--tx-2);line-height:1.6;max-height:80px;overflow-y:auto}
+.log-content .ok{color:var(--accent)}.log-content .e{color:var(--error)}
 
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
 .modal.open{display:flex}
-.mbody{background:rgba(14,14,30,.98);border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:24px;width:92%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.mbody{background:var(--bg);border:1px solid var(--brd);border-radius:4px;padding:24px;width:92%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:var(--md-shadow-3)}
 .mbody h3{font-family:'Cormorant',serif;font-size:20px;margin-bottom:14px}
-.cfg-sec{margin-bottom:14px}.cfg-sec h4{font-size:9px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05);font-weight:600}
-.cfg{margin-top:8px}.cfg label{font-size:10px;color:rgba(255,255,255,.3);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px;font-weight:500}
-.cfg input{width:100%;max-width:360px;padding:8px 12px;border-radius:3px;border:1px solid rgba(255,255,255,.08);font-size:12px;font-family:'Montserrat';background:transparent;color:#E0E0EC;outline:none;font-weight:300}
+.cfg-sec{margin-bottom:14px}.cfg-sec h4{font-size:9px;color:var(--tx-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--brd);font-weight:600}
+.cfg{margin-top:8px}.cfg label{font-size:10px;color:var(--tx-2);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px;font-weight:500}
+.cfg input{width:100%;max-width:360px;padding:8px 12px;border-radius:3px;border:1px solid var(--brd-2);font-size:12px;font-family:'Montserrat';background:transparent;color:var(--tx);outline:none;font-weight:300}
 .cfg input:focus{border-color:rgba(212,165,116,.4)}
-.eg{display:block;font-size:10px;color:rgba(255,255,255,.25);margin-top:3px;font-weight:300;word-break:break-all}
+.eg{display:block;font-size:10px;color:var(--tx-2);margin-top:3px;font-weight:300;word-break:break-all}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{padding:5px 12px;border:1px solid rgba(255,255,255,.08);font-size:11px;cursor:pointer;transition:all .2s;background:transparent;color:rgba(255,255,255,.35);border-radius:3px}
-.chip:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.6)}
-.chip.on{border-color:rgba(212,165,116,.3);color:#D4A574;background:rgba(212,165,116,.05)}
-.chip.green{border-color:rgba(68,215,139,.4);color:#44D78B;background:rgba(68,215,139,.05)}
-.chip.red{border-color:rgba(224,122,95,.4);color:#E07A5F;background:rgba(224,122,95,.05)}
-.save-btn{width:100%;padding:10px;border:1px solid rgba(212,165,116,.2);background:rgba(212,165,116,.08);color:#D4A574;font-size:11px;font-family:'Montserrat';font-weight:600;cursor:pointer;margin-top:10px;letter-spacing:.8px;text-transform:uppercase;border-radius:3px}
-.src-panel{padding:8px 0;border-top:1px solid rgba(255,255,255,.05);animation:fadeUp .15s ease}
+.chip{padding:5px 12px;border:1px solid var(--brd-2);font-size:11px;cursor:pointer;transition:all .2s;background:transparent;color:var(--tx-2);border-radius:3px}
+.chip:hover{border-color:var(--brd);color:var(--tx)}
+.chip.on{border-color:rgba(212,165,116,.3);color:var(--accent);background:rgba(212,165,116,.05)}
+.chip.green{border-color:rgba(68,215,139,.4);color:var(--ok);background:rgba(68,215,139,.05)}
+.chip.red{border-color:rgba(224,122,95,.4);color:var(--error);background:rgba(224,122,95,.05)}
+.save-btn{width:100%;padding:10px;border:1px solid rgba(212,165,116,.2);background:rgba(212,165,116,.08);color:var(--accent);font-size:11px;font-family:'Montserrat';font-weight:600;cursor:pointer;margin-top:10px;letter-spacing:.8px;text-transform:uppercase;border-radius:3px}
+.src-panel{padding:8px 0;border-top:1px solid var(--brd);animation:fadeUp .15s ease}
 .src-panel .cfg{margin-top:0}
 
 .songs-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;width:100%;min-width:0}
-.song-card{display:flex;gap:8px;padding:8px 10px;border:1px solid rgba(255,255,255,.05);border-radius:6px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.01);min-width:0}
-.song-card:hover{border-color:rgba(212,165,116,.15);background:rgba(255,255,255,.02)}
+.song-card{display:flex;gap:8px;padding:8px 10px;border:1px solid var(--brd);border-radius:6px;cursor:pointer;transition:all .2s;background:var(--bg);min-width:0}
+.song-card:hover{border-color:rgba(212,165,116,.15);background:var(--bg-2)}
 .song-card.sel{border-color:rgba(212,165,116,.3);background:rgba(212,165,116,.03)}
 .song-card .cover{width:32px;height:32px;border-radius:4px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .song-card .cover .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.15}
@@ -98,44 +104,44 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
 .song-card .meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
 .song-card .meta .t{font-family:'Cormorant',serif;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
 .song-card .meta .t .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
-.song-card .meta .u{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;font-weight:300;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.song-card .meta .tag{font-size:8px;padding:1px 5px;border-radius:2px;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
-.song-card .meta .tag.ok{color:#D4A574;border-color:rgba(212,165,116,.2)}
-.song-card .meta .tag.fail{color:#E07A5F;border-color:rgba(224,122,95,.2)}
-.song-card .meta .tag.pend{color:rgba(255,255,255,.3)}
+.song-card .meta .u{font-size:10px;color:var(--tx-2);margin-top:1px;font-weight:300;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.song-card .meta .tag{font-size:8px;padding:1px 5px;border-radius:2px;border:1px solid var(--brd);color:var(--tx-2);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.song-card .meta .tag.ok{color:var(--accent);border-color:rgba(212,165,116,.2)}
+.song-card .meta .tag.fail{color:var(--error);border-color:rgba(224,122,95,.2)}
+.song-card .meta .tag.pend{color:var(--tx-2)}
 .song-card .ck-zone{width:32px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;cursor:pointer;border-radius:4px;transition:background .1s}
-.song-card .ck-zone:hover{background:rgba(255,255,255,.04)}
-.song-card .ck-zone input[type=checkbox]{accent-color:#D4A574;width:14px;height:14px;cursor:pointer;pointer-events:none}
+.song-card .ck-zone:hover{background:var(--bg-2)}
+.song-card .ck-zone input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;pointer-events:none}
 .song-card .cv-zone{flex:1;min-width:0;display:flex;gap:8px;cursor:pointer;padding:8px 10px 8px 0}
 
 .failed-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0 8px}
-.fp-head{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
+.fp-head{padding:10px 0;border-bottom:1px solid var(--brd);flex-shrink:0}
 .fp-title{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.fp-count{font-size:11px;color:#E07A5F;background:rgba(224,122,95,.1);padding:1px 8px;border-radius:10px;font-weight:500}
+.fp-count{font-size:11px;color:var(--error);background:rgba(224,122,95,.1);padding:1px 8px;border-radius:10px;font-weight:500}
 .fp-actions{display:flex;gap:5px;flex-wrap:wrap}
 .fp-list{flex:1;overflow-y:auto;padding:8px 0}
-.fp-list .fitem{display:flex;gap:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.05);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s;background:rgba(255,255,255,.01)}
+.fp-list .fitem{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--brd);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s;background:var(--bg)}
 .fp-list .fitem:hover{border-color:rgba(224,122,95,.2);background:rgba(224,122,95,.02)}
 .fp-list .fitem .fi-cover{width:32px;height:32px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(224,122,95,.06)}
-.fp-list .fitem .fi-cover .mi{font-size:13px;color:#E07A5F;opacity:.6}
+.fp-list .fitem .fi-cover .mi{font-size:13px;color:var(--error);opacity:.6}
 .fp-list .fitem .fi-meta{flex:1;min-width:0;overflow:hidden}
 .fp-list .fitem .fi-meta .t{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .fp-list .fitem .fi-meta .t .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
-.fp-list .fitem .fi-meta .reason{font-size:10px;color:#E07A5F;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fp-list .fitem .fi-meta .time{font-size:9px;color:rgba(255,255,255,.25);margin-top:1px}
+.fp-list .fitem .fi-meta .reason{font-size:10px;color:var(--error);opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fp-list .fitem .fi-meta .time{font-size:9px;color:var(--tx-2);margin-top:1px}
 .fp-list .fitem .fi-retry{flex-shrink:0;align-self:center}
-.fp-list .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:rgba(255,255,255,.25);font-size:13px}
-.fp-placeholder{flex-shrink:0;border-top:1px solid rgba(255,255,255,.05);margin-top:8px}
-.fp-ph-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;color:rgba(255,255,255,.25);gap:6px}
+.fp-list .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--tx-2);font-size:13px}
+.fp-placeholder{flex-shrink:0;border-top:1px solid var(--brd);margin-top:8px}
+.fp-ph-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;color:var(--tx-2);gap:6px}
 
 .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;backdrop-filter:blur(2px)}
 .sheet-overlay.open{display:block}
-.sheet{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(14,14,30,.98);border:1px solid rgba(255,255,255,.1);border-radius:14px;z-index:101;box-shadow:0 24px 80px rgba(0,0,0,.5);display:none;flex-direction:column;width:500px;max-height:80vh;overflow:hidden}
+.sheet{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:1px solid var(--brd);border-radius:14px;z-index:101;box-shadow:var(--md-shadow-3);display:none;flex-direction:column;width:500px;max-height:80vh;overflow:hidden}
 .sheet.open{display:flex}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--brd)}
 .sheet-head h3{font-family:'Cormorant',serif;font-size:18px;font-weight:600}
-.sheet-head .close-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:none;background:rgba(255,255,255,.04);color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s}
-.sheet-head .close-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.sheet-head .close-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:none;background:var(--bg-2);color:var(--tx-2);cursor:pointer;transition:all .15s}
+.sheet-head .close-btn:hover{background:var(--brd);color:var(--tx)}
 .sheet-cover{width:100%;padding:16px;display:flex;justify-content:center}
 .sheet-cover .cover-lg{width:180px;height:180px;border-radius:10px;overflow:hidden;position:relative}
 .sheet-cover .cover-lg .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:.08;background:linear-gradient(135deg,rgba(212,165,116,.1),rgba(107,127,163,.08))}
@@ -144,23 +150,23 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
 .sheet-cover .cover-lg:hover .upload-hint{opacity:1}
 .sheet-cover .cover-lg img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 .sheet-cover .cover-info{text-align:center;margin-top:10px}
-.sheet-cover .cover-info p{font-size:11px;color:rgba(255,255,255,.35);font-weight:300}
+.sheet-cover .cover-info p{font-size:11px;color:var(--tx-2);font-weight:300}
 .sheet-body{padding:0 20px 16px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 .sheet-body .fg{display:flex;flex-direction:column}
 .sheet-body .fg.full{grid-column:span 2}
-.fg label{font-size:9px;color:rgba(255,255,255,.3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.8px;font-weight:500}
-.fg input,.fg textarea{width:100%;padding:8px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.08);font-size:12px;font-family:'Montserrat';background:transparent;color:#E0E0EC;outline:none;transition:all .2s;font-weight:300}
+.fg label{font-size:9px;color:var(--tx-2);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.8px;font-weight:500}
+.fg input,.fg textarea{width:100%;padding:8px 12px;border-radius:4px;border:1px solid var(--brd-2);font-size:12px;font-family:'Montserrat';background:transparent;color:var(--tx);outline:none;transition:all .2s;font-weight:300}
 .fg input:focus,.fg textarea:focus{border-color:rgba(212,165,116,.4)}
 .fg textarea{min-height:50px;resize:vertical}
-.sheet-foot{display:flex;gap:8px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.06)}
+.sheet-foot{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--brd)}
 .sheet-foot button{padding:8px 18px;border-radius:4px;border:none;font-size:11px;font-family:'Montserrat';cursor:pointer;font-weight:500;transition:all .2s;letter-spacing:.5px;text-transform:uppercase}
-.sheet-foot .save{background:rgba(212,165,116,.12);color:#D4A574;border:1px solid rgba(212,165,116,.2)}
+.sheet-foot .save{background:rgba(212,165,116,.12);color:var(--accent);border:1px solid rgba(212,165,116,.2)}
 .sheet-foot .save:hover{background:rgba(212,165,116,.18)}
-.sheet-foot .scrape{background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08)}
-.sheet-foot .cancel{background:transparent;color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.05);margin-left:auto}
+.sheet-foot .scrape{background:transparent;color:var(--tx-2);border:1px solid var(--brd-2)}
+.sheet-foot .cancel{background:transparent;color:var(--tx-2);border:1px solid var(--brd);margin-left:auto}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(30,32,64,.95);color:#D4A574;padding:7px 18px;border-radius:16px;font-size:12px;z-index:999;display:none;box-shadow:0 2px 12px rgba(0,0,0,.4);transition:opacity .25s;border:1px solid rgba(212,165,116,.2)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg);color:var(--accent);padding:7px 18px;border-radius:16px;font-size:12px;z-index:999;display:none;box-shadow:var(--md-shadow-2);transition:opacity .25s;border:1px solid rgba(212,165,116,.2)}
 .song-card{transition:all .15s}
 @media(prefers-reduced-motion){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
@@ -176,11 +182,11 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
   .hdr-btn .mi{font-size:20px}
   #app{padding:0;height:auto;min-height:calc(100vh - 46px)}
   .b-layout{flex-direction:column;max-width:100%}
-  .b-sidebar{display:none;position:fixed;top:46px;left:0;bottom:0;width:260px;z-index:200;background:#14142B;border-right:1px solid rgba(255,255,255,.08);box-shadow:4px 0 20px rgba(0,0,0,.5)}
+  .b-sidebar{display:none;position:fixed;top:46px;left:0;bottom:0;width:260px;z-index:200;background:var(--bg);border-right:1px solid var(--brd);box-shadow:var(--md-shadow-3)}
   .b-sidebar.open{display:flex}
   .b-main{padding:0;align-items:stretch}
-  .stats-strip{flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.05);width:100%!important}
-  .stat-item{min-width:calc(50% - 1px);border-bottom:1px solid rgba(255,255,255,.04);padding:8px 10px}
+  .stats-strip{flex-wrap:wrap;border-bottom:1px solid var(--brd);width:100%!important}
+  .stat-item{min-width:calc(50% - 1px);border-bottom:1px solid var(--brd);padding:8px 10px}
   .stat-item:nth-child(2){border-right:none}
   .stat-item .num{font-size:18px}
   .toolbar{padding:8px 0;border-bottom:none;width:100%!important}
@@ -222,15 +228,15 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
   .fp-list .fitem .fi-meta .reason{font-size:9px}
 }
 
-#mTabs{display:none;justify-content:center;gap:4px;padding:6px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.05)}
-#mTabs button{padding:6px 16px;border:none;border-radius:6px;font-size:12px;font-family:'Montserrat';font-weight:500;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.04);color:rgba(255,255,255,.4)}
-#mTabs button.on{background:rgba(212,165,116,.12);color:#D4A574}
+#mTabs{display:none;justify-content:center;gap:4px;padding:6px 12px;background:var(--bg-2);border-bottom:1px solid var(--brd)}
+#mTabs button{padding:6px 16px;border:none;border-radius:6px;font-size:12px;font-family:'Montserrat';font-weight:500;cursor:pointer;transition:all .2s;background:var(--bg-2);color:var(--tx-2)}
+#mTabs button.on{background:rgba(212,165,116,.12);color:var(--accent)}
 </style>
 </head>
 <body>
 <div class="hdr">
   <button class="hdr-btn" id="menuBtn" onclick="toggleSidebar()" style="display:none"><span class="mi" style="font-size:20px">menu</span></button>
-  <div class="logo"><span class="mi">music_note</span>标签刮削<span class="ver">v1.1.2</span></div>
+  <div class="logo"><span class="mi">music_note</span>标签刮削<span class="ver">v1.1.3</span></div>
   <div class="tabs" id="dTabs"><button class="on" data-tab="songs" onclick="switchTab('songs')"><span class="mi" style="font-size:14px">music_note</span> 歌曲</button><button data-tab="failed" onclick="switchTab('failed')"><span class="mi" style="font-size:14px">warning</span> 失败</button></div>
   <div class="spacer"></div>
   <button class="hdr-btn" onclick="location.reload(true)"><span class="mi" style="font-size:16px">refresh</span></button>
@@ -276,7 +282,7 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
       <div class="songs-area" id="songList"></div>
       <div class="failed-panel" id="failedPanel" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <div class="fp-head">
-          <div class="fp-title"><span class="mi" style="font-size:16px;color:#E07A5F">error</span> 失败列表 <span class="fp-count" id="fpCount">0</span></div>
+          <div class="fp-title"><span class="mi" style="font-size:16px;color:var(--error)">error</span> 失败列表 <span class="fp-count" id="fpCount">0</span></div>
           <div class="fp-actions">
             <button class="ab" onclick="loadFailed().then(function(){renderFailed()})"><span class="mi">refresh</span>刷新</button>
             <button class="ab danger" onclick="clearFailed()"><span class="mi">delete</span>清空</button>
@@ -320,8 +326,13 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
 <div class="modal" id="cfgModal" onclick="if(event.target===this)closeCfg()">
   <div class="mbody">
     <div style="display:flex;justify-content:space-between;margin-bottom:14px"><h3>设置</h3><button class="hdr-btn" onclick="closeCfg()" style="width:28px;height:28px"><span class="mi" style="font-size:14px">close</span></button></div>
+    <div class="cfg-sec"><h4>外观</h4>
+      <div style="display:flex;gap:6px;align-items:center"><label style="font-size:11px;color:var(--tx-2);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin:0">主题</label>
+        <div class="chips" id="themeChips"><div class="chip on" data-theme="light" onclick="setPluginTheme('light')">浅色</div><div class="chip" data-theme="dark" onclick="setPluginTheme('dark')">深色</div><div class="chip" data-theme="auto" onclick="setPluginTheme('auto')">跟随主程序</div></div>
+      </div>
+    </div>
     <div class="cfg-sec"><h4>刮削源</h4>
-      <div class="chips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')">AcoustID</div><div class="chip" onclick="showSrc('src-netease')">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')">酷我</div></div>
+      <div class="chips" id="srcChips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')">AcoustID</div><div class="chip" onclick="showSrc('src-netease')">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')">酷我</div></div>
       <div id="src-acoustid" class="src-panel" style="display:block"><div class="cfg"><label>AcoustID Key</label><input id="cfg_ak" placeholder="输入你的 Key"><span class="eg">获取地址：acoustid.org/webservice</span></div></div>
       <div id="src-netease" class="src-panel" style="display:none"><div class="cfg"><label>网易云 URL</label><input id="cfg_nu" placeholder="输入 API URL"><span class="eg">示例：https://interface.music.163.com/eapi/api/cloudsearch/pc</span></div></div>
       <div id="src-qqmusic" class="src-panel" style="display:none"><div class="cfg"><label>QQ音乐 URL</label><input id="cfg_qu" placeholder="输入 API URL"><span class="eg">示例：https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span></div></div>
@@ -367,14 +378,18 @@ function isMobile(){return window.innerWidth<=768}
 function toggleSidebar(){var sb=E("sidebar"),ov=E("sidebarOverlay");if(sb){sb.classList.toggle("open");if(ov)ov.classList.toggle("open")}}
 function setupMobile(){var mb=E("menuBtn"),dt=E("dTabs"),mt=E("mTabs");if(isMobile()){if(mb)mb.style.display="";if(dt)dt.style.display="none";if(mt)mt.style.display="flex"}else{if(mb)mb.style.display="none";if(dt)dt.style.display="";if(mt)mt.style.display="none";var sb=E("sidebar");if(sb)sb.classList.remove("open");var ov=E("sidebarOverlay");if(ov)ov.classList.remove("open")}}
 
-function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4};var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];var chips=document.querySelectorAll(".chips .chip");chips.forEach(function(c,i){c.classList.remove("on");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]])chips[map[panelId]].classList.add("on")}
+function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4};var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];var chips=document.querySelectorAll("#srcChips .chip");chips.forEach(function(c,i){c.classList.remove("on");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]])chips[map[panelId]].classList.add("on")}
 
 async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config"),t=await r.text();try{S.cfg=JSON.parse(t);uiCfg();return}catch(e2){if(i<2){await sleep(800);continue}log("cfg parse err","e")}}catch(e){if(i<2){await sleep(800);continue}log("cfg load err:"+e.message,"e")}}}
 function uiCfg(){var el;el=E("cfg_ak");if(el)el.value=S.cfg.acoustid_api_key||"";el=E("cfg_nu");if(el)el.value=S.cfg.netease_api_url||"";el=E("cfg_qu");if(el)el.value=S.cfg.qqmusic_api_url||"";el=E("cfg_ku");if(el)el.value=S.cfg.kugou_api_url||"";el=E("cfg_kw");if(el)el.value=S.cfg.kuwo_api_url||""}
 async function saveCfg(){var el;S.cfg.acoustid_api_key=(el=E("cfg_ak"))?el.value.trim():"";S.cfg.netease_api_url=(el=E("cfg_nu"))?el.value.trim():"";S.cfg.qqmusic_api_url=(el=E("cfg_qu"))?el.value.trim():"";S.cfg.kugou_api_url=(el=E("cfg_ku"))?el.value.trim():"";S.cfg.kuwo_api_url=(el=E("cfg_kw"))?el.value.trim():"";await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();toast("已保存");closeCfg()}
 async function chkSources(){try{var r=await af("./config/status");if(r.ok){S.srcStatus=await r.json();syncChips()}}catch(e){}}
-function syncChips(){var chips=document.querySelectorAll(".chips .chip");var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];chips.forEach(function(c,i){var key=srcs[i];var st=S.srcStatus[key];c.classList.remove("on","green","red");if(st===true)c.classList.add("on","green");else if(st===false)c.classList.add("red");else c.classList.add("on")})}
-function openCfg(){syncChips();E("cfgModal").classList.add("open")}
+function syncChips(){var chips=document.querySelectorAll("#srcChips .chip");var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];chips.forEach(function(c,i){var key=srcs[i];var st=S.srcStatus[key];c.classList.remove("on","green","red");if(st===true)c.classList.add("on","green");else if(st===false)c.classList.add("red");else c.classList.add("on")})}
+var _pluginTheme='light';
+function setPluginTheme(th){_pluginTheme=th;localStorage.setItem('tag-plugin-theme',th);applyPluginTheme();syncThemeChips()}
+function applyPluginTheme(){var th=_pluginTheme;if(th==='auto'){th=(window.SongloftPlugin&&SongloftPlugin.getTheme)?SongloftPlugin.getTheme():'light'}document.documentElement.dataset.theme=th;document.documentElement.className='theme-'+th}
+function syncThemeChips(){var chips=document.querySelectorAll('#themeChips .chip');chips.forEach(function(c){c.classList.toggle('on',c.dataset.theme===_pluginTheme)})}
+function openCfg(){syncChips();syncThemeChips();E("cfgModal").classList.add("open")}
 function closeCfg(){E("cfgModal").classList.remove("open")}
 
 async function loadScraped(){try{var r=await af("./storage/scraped");if(r.ok){var d=await r.json();(d||[]).forEach(function(id){S._scraped.add(Number(id))})}}catch(e){}updStats();if(S._tab==="songs")render()}
@@ -388,7 +403,7 @@ function showAll(){S._curPath="";S.songs=S._allSongs.slice();render()}
 function filterPath(){var arr=S._allSongs||[],p=S._curPath||"";if(!p)S.songs=arr.slice();else{var prefix=S._musicPrefix+(p?p+"/":"");S.songs=arr.filter(function(s){var fp=(s.file_path||"").replace(/^\//,"");return fp.startsWith(prefix)&&fp.indexOf("/",prefix.length)<0})}render()}
 function navTo(path){S._curPath=path||"";filterPath();if(isMobile()){var sb=E("sidebar"),ov=E("sidebarOverlay");if(sb)sb.classList.remove("open");if(ov)ov.classList.remove("open")}}
 function buildTree(path,depth){var prefix=S._musicPrefix+(path?path+"/":""),sub={};S._allSongs.forEach(function(s){var fp=(s.file_path||"").replace(/^\//,"");if(!fp.startsWith(prefix))return;var rel=fp.substring(prefix.length);if(rel[0]==="/")rel=rel.substring(1);var i=rel.indexOf("/");if(i>0)sub[rel.substring(0,i)]=true});var keys=Object.keys(sub).sort(),h="",sel=S._curPath||"";for(var i=0;i<keys.length;i++){var nm=keys[i],pn=path?path+"/"+nm:nm;h+='<div class="b-tn'+(pn===sel?' sel':'')+'" style="padding-left:'+(depth*14+8)+'px" onclick="navTo(\''+escH(pn)+'\')"><span class="mi">'+(pn===sel?'folder_open':'folder')+'</span>'+esc(nm)+'</div>';h+=buildTree(pn,depth+1)}return h}
-function render(){if(S._tab==="failed"){renderFailed();return}var t=E("treeContainer"),c=E("breadcrumb"),st=E("statsStrip");if(st)st.style.display="";if(t&&S._allSongs){var h='<div class="b-tn'+(S._curPath===""?' sel':'')+'" style="padding-left:8px" onclick="navTo(\'\')"><span class="mi">'+(S._curPath===""?'folder_open':'folder')+'</span>'+(S._rootName||"全部歌曲")+'</div>';h+=buildTree("",0);t.innerHTML=h}if(c){var count=S.songs?S.songs.length:0;c.textContent=(S._curPath||S._rootName||"全部歌曲")+" ("+count+")"}var lst=E("songList");if(!lst)return;if(!S.songs.length){lst.innerHTML='<div style="text-align:center;padding:48px 20px;color:rgba(255,255,255,.25);font-size:13px"><span class="mi" style="font-size:40px;display:block;margin-bottom:10px;opacity:.12">library_music</span>没有歌曲</div>';updStats();return}var scraped=S._scraped||new Set,failed=S.failedSongs||[],fids=new Set();failed.forEach(function(f){fids.add(Number(f.id))});lst.innerHTML=S.songs.map(function(s){var sid=Number(s.id),sl=S.sel.has(sid)?" sel":"",ck=S.sel.has(sid)?" checked":"",dot="pend";if(fids.has(sid))dot="fail";else if(scraped.has(sid))dot="ok";var tagClass=dot,tagText=dot==="ok"?"已刮削":dot==="fail"?"失败":"待处理";var hasCover=!!s.cover_url;var coverIcon=hasCover?'album':'music_note';var coverStyle=hasCover?'background:rgba(212,165,116,.06)':'background:rgba(255,255,255,.02)';var coverColor=hasCover?'color:#D4A574;opacity:.5':'opacity:.2';return'<div class="song-card'+sl+'"><div class="ck-zone" onclick="event.stopPropagation();tgl('+sid+')"><input type="checkbox"'+ck+'></div><div class="cv-zone" onclick="selectOne('+sid+',event)"><div class="cover" style="'+coverStyle+'"><span class="mi" style="font-size:13px;'+coverColor+'">'+coverIcon+'</span></div><div class="meta"><div class="t"><span class="name">'+esc(s.title||"?")+'</span><span class="tag '+tagClass+'">'+tagText+'</span></div><div class="u">'+esc(s.artist||"?")+(s.album?" · "+esc(s.album):"")+" · "+fm(s.duration)+(s.format?" · "+esc(s.format):"")+"</div></div></div></div>"}).join("");upd();updStats()}
+function render(){if(S._tab==="failed"){renderFailed();return}var t=E("treeContainer"),c=E("breadcrumb"),st=E("statsStrip");if(st)st.style.display="";if(t&&S._allSongs){var h='<div class="b-tn'+(S._curPath===""?' sel':'')+'" style="padding-left:8px" onclick="navTo(\'\')"><span class="mi">'+(S._curPath===""?'folder_open':'folder')+'</span>'+(S._rootName||"全部歌曲")+'</div>';h+=buildTree("",0);t.innerHTML=h}if(c){var count=S.songs?S.songs.length:0;c.textContent=(S._curPath||S._rootName||"全部歌曲")+" ("+count+")"}var lst=E("songList");if(!lst)return;if(!S.songs.length){lst.innerHTML='<div style="text-align:center;padding:48px 20px;color:var(--tx-2);font-size:13px"><span class="mi" style="font-size:40px;display:block;margin-bottom:10px;opacity:.12">library_music</span>没有歌曲</div>';updStats();return}var scraped=S._scraped||new Set,failed=S.failedSongs||[],fids=new Set();failed.forEach(function(f){fids.add(Number(f.id))});lst.innerHTML=S.songs.map(function(s){var sid=Number(s.id),sl=S.sel.has(sid)?" sel":"",ck=S.sel.has(sid)?" checked":"",dot="pend";if(fids.has(sid))dot="fail";else if(scraped.has(sid))dot="ok";var tagClass=dot,tagText=dot==="ok"?"已刮削":dot==="fail"?"失败":"待处理";var hasCover=!!s.cover_url;var coverIcon=hasCover?'album':'music_note';var coverStyle=hasCover?'background:rgba(212,165,116,.06)':'background:var(--bg-2)';var coverColor=hasCover?'color:var(--accent);opacity:.5':'opacity:.2';return'<div class="song-card'+sl+'"><div class="ck-zone" onclick="event.stopPropagation();tgl('+sid+')"><input type="checkbox"'+ck+'></div><div class="cv-zone" onclick="selectOne('+sid+',event)"><div class="cover" style="'+coverStyle+'"><span class="mi" style="font-size:13px;'+coverColor+'">'+coverIcon+'</span></div><div class="meta"><div class="t"><span class="name">'+esc(s.title||"?")+'</span><span class="tag '+tagClass+'">'+tagText+'</span></div><div class="u">'+esc(s.artist||"?")+(s.album?" · "+esc(s.album):"")+" · "+fm(s.duration)+(s.format?" · "+esc(s.format):"")+"</div></div></div></div>"}).join("");upd();updStats()}
 function tgl(id,ev){if(ev)ev.stopPropagation();S.sel.has(id)?S.sel.delete(id):S.sel.add(id);render()}
 function selectOne(id,ev){if(ev)ev.stopPropagation();S.sel.clear();S.sel.add(id);render();syncEditor()}
 function selAll(){S.songs.forEach(function(s){S.sel.add(s.id)});render()}
@@ -414,7 +429,7 @@ function showFailed(){loadFailed();toast("切换到失败列表")}
 function retryFailed(i,id){var kw=E("fk_"+i)?E("fk_"+i).value.trim():"";if(!kw){var s=findSong(id);kw=(s?(s.artist||"")+" "+(s.title||""):"").trim()}if(!kw){toast("请输入关键词");return}var s=findSong(id);S.retryId=id;E("ra").value=s?s.artist||"":"";E("rt").value=s?s.title||"":"";E("rk").value=kw;E("retryRes").innerHTML="";E("retryModal").style.display="flex"}
 function openManualRetry(){S.retryId=0;E("ra").value="";E("rt").value="";E("rk").value="";E("retryRes").innerHTML="";E("retryModal").style.display="flex"}
 function closeRetry(){E("retryModal").style.display="none";S.retryId=0}
-async function doRetry(){var id=S.retryId;if(!id)return;var art=E("ra").value.trim(),tit=E("rt").value.trim(),kw=E("rk").value.trim()||(art+" "+tit);if(!kw){toast("请输入关键词");return}try{var r=await af("./scrape/manual/"+id,{method:"POST",body:JSON.stringify({keyword:kw,artist:art,title:tit})}),d=await r.json();if(d.error){E("retryRes").innerHTML='<div style="color:#E07A5F;font-size:12px">'+esc(d.error)+'</div>';return}var sc=d.sourceScores?Object.entries(d.sourceScores).map(function(e){return e[0]+":"+e[1].toFixed(2)}).join(", "):"";E("retryRes").innerHTML='<div style="padding:6px"><b>'+esc(d.artist)+' - '+esc(d.title)+'</b><br>album: '+esc(d.album||"")+'<br>源: '+d.source+' ('+d.score.toFixed(2)+')<br>'+sc+'<br><button class="ab pri" data-art="'+escH(d.artist)+'" data-tit="'+escH(d.title)+'" data-alb="'+escH(d.album||"")+'" data-sid="'+id+'" onclick="applyR(this)" style="margin-top:4px;font-size:11px;padding:4px 12px">写入</button></div>'}catch(e){E("retryRes").innerHTML='<div style="color:#E07A5F;font-size:12px">'+esc(e.message)+'</div>'}}
+async function doRetry(){var id=S.retryId;if(!id)return;var art=E("ra").value.trim(),tit=E("rt").value.trim(),kw=E("rk").value.trim()||(art+" "+tit);if(!kw){toast("请输入关键词");return}try{var r=await af("./scrape/manual/"+id,{method:"POST",body:JSON.stringify({keyword:kw,artist:art,title:tit})}),d=await r.json();if(d.error){E("retryRes").innerHTML='<div style="color:var(--error);font-size:12px">'+esc(d.error)+'</div>';return}var sc=d.sourceScores?Object.entries(d.sourceScores).map(function(e){return e[0]+":"+e[1].toFixed(2)}).join(", "):"";E("retryRes").innerHTML='<div style="padding:6px"><b>'+esc(d.artist)+' - '+esc(d.title)+'</b><br>album: '+esc(d.album||"")+'<br>源: '+d.source+' ('+d.score.toFixed(2)+')<br>'+sc+'<br><button class="ab pri" data-art="'+escH(d.artist)+'" data-tit="'+escH(d.title)+'" data-alb="'+escH(d.album||"")+'" data-sid="'+id+'" onclick="applyR(this)" style="margin-top:4px;font-size:11px;padding:4px 12px">写入</button></div>'}catch(e){E("retryRes").innerHTML='<div style="color:var(--error);font-size:12px">'+esc(e.message)+'</div>'}}
 async function applyR(el){var id=el.dataset.sid,art=el.dataset.art,tit=el.dataset.tit,alb=el.dataset.alb;closeRetry();S.busy=true;setP(true,0);try{var r=await af("./tags/"+id,{method:"PUT",body:JSON.stringify({title:tit,artist:art,album:alb})}),d=await r.json();if(d.error){log("写入失败:"+d.error,"e");toast("失败")}else{log("ok "+art+" - "+tit+" | "+d.file_write,"ok");toast("写入成功");S.failedSongs=S.failedSongs.filter(function(f){return String(f.id)!==String(id)});updStats();if(S._tab==="failed")renderFailed();try{await af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)})}catch(e){}await loadSongs()}}catch(e){log("错误:"+e.message,"e")}S.busy=false;setP(false,100)}
 
 function syncEditor(){if(S.sel.size===1){var a=[];S.sel.forEach(function(id){a.push(id)});var id=a[0];if(S_editId!==id)selectEdit(id)}else{S_editId=0}}
@@ -425,15 +440,15 @@ async function scrapeEdit(){if(S.busy)return;if(!S_editId)return;S.busy=true;set
 
 function resumeBatch(){var taskId=localStorage.getItem("batchTaskId");if(!taskId)return;S.busy=true;var bs=E("btnStop");if(bs)bs.disabled=false;setP(true,0);log("恢复批量...");S._loggedCnt=-1;S._pollId=setInterval(async function(){try{var pr=await af("./scrape/batch/progress?taskId="+taskId);if(!pr.ok){stopBatch();return}var pd=await pr.json();if(pd.error){stopBatch();return}setP(true,Math.round(pd.current/pd.total*100));if(pd.lastLog&&pd.loggedCount!=S._loggedCnt){log(pd.lastLog.replace("| skipped","| ok (no change)"));S._loggedCnt=pd.loggedCount}if(pd.status==="done"){clearInterval(S._pollId);S._pollId=0;localStorage.removeItem("batchTaskId");localStorage.removeItem("batchTotal");setP(true,100);var bs2=E("btnStop");if(bs2)bs2.disabled=true;var bf2=E("btnForce");if(bf2)bf2.disabled=false;var dl=0;(pd.results||[]).forEach(function(r){if(S._loggedCnt===undefined||dl>=S._loggedCnt)log(r.artist+" - "+r.title+" | "+r.source+" | "+(r.fileWriteStatus==="skipped"?"ok (no change)":r.fileWriteStatus),"ok");dl++});log("完成: 成功"+pd.success+" 失败"+pd.failed+" 跳过"+pd.skipped);toast("成功"+pd.success);await loadSongs();S.busy=false}}catch(e2){stopBatch()}},2000)}
 
-function showDoc(type){var u="https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/"+(type==="README"?"README.md":"CHANGELOG.md");E("docTitle").textContent=type;E("docBody").innerHTML='<div style="text-align:center;padding:20px">加载中…</div>';E("docModal").classList.add("open");fetch(u).then(function(r){if(!r.ok){E("docBody").innerHTML='<div style="color:#E07A5F">加载失败 (HTTP '+r.status+')</div>';return}return r.text()}).then(function(raw){E("docBody").innerHTML=md2html(raw)}).catch(function(e){E("docBody").innerHTML='<div style="color:#E07A5F">'+esc(e.message)+'</div>'})}
+function showDoc(type){var u="https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/"+(type==="README"?"README.md":"CHANGELOG.md");E("docTitle").textContent=type;E("docBody").innerHTML='<div style="text-align:center;padding:20px">加载中…</div>';E("docModal").classList.add("open");fetch(u).then(function(r){if(!r.ok){E("docBody").innerHTML='<div style="color:var(--error)">加载失败 (HTTP '+r.status+')</div>';return}return r.text()}).then(function(raw){E("docBody").innerHTML=md2html(raw)}).catch(function(e){E("docBody").innerHTML='<div style="color:var(--error)">'+esc(e.message)+'</div>'})}
 function closeDoc(){E("docModal").classList.remove("open")}
-function md2html(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/^### (.+)/gm,"<h4 style='margin:12px 0 4px'>$1</h4>").replace(/^## (.+)/gm,"<h3 style='margin:16px 0 6px;color:#D4A574'>$1</h3>").replace(/^# (.+)/gm,"<h2 style='margin:20px 0 8px;color:#D4A574'>$1</h2>").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code style='background:rgba(255,255,255,.05);padding:1px 4px;border-radius:3px'>$1</code>").replace(/^- (.+)/gm,"<li style='margin-left:16px'>$1</li>").replace(/\[([^\]]+)\]\(([^)]+)\)/g,"<a href='$2' target='_blank' style='color:#D4A574'>$1</a>").replace(/\n\n/g,"<br><br>")}
+function md2html(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/^### (.+)/gm,"<h4 style='margin:12px 0 4px'>$1</h4>").replace(/^## (.+)/gm,"<h3 style='margin:16px 0 6px;color:var(--accent)'>$1</h3>").replace(/^# (.+)/gm,"<h2 style='margin:20px 0 8px;color:var(--accent)'>$1</h2>").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code style='background:var(--bg-2);padding:1px 4px;border-radius:3px'>$1</code>").replace(/^- (.+)/gm,"<li style='margin-left:16px'>$1</li>").replace(/\[([^\]]+)\]\(([^)]+)\)/g,"<a href='$2' target='_blank' style='color:var(--accent)'>$1</a>").replace(/\n\n/g,"<br><br>")}
 
 function preview(){var is=ids();if(is.length!==1){toast("请选择一首歌曲");return}retryFailed(0,is[0])}
 function applyPrev(){var d=S.prev;if(!d)return;applyR({dataset:{sid:d.songId,art:d.artist,tit:d.title,alb:d.album}})}
 function closePrev(){var m=E("prevModal");if(m)m.style.display="none";S.prev=null}
 
-window.onload=async function(){await loadCfg();chkSources();await loadSongs();await loadScraped();await loadFailed();resumeBatch();setupMobile()};
+window.onload=async function(){_pluginTheme=localStorage.getItem('tag-plugin-theme')||'light';applyPluginTheme();await loadCfg();chkSources();await loadSongs();await loadScraped();await loadFailed();resumeBatch();setupMobile()};
 window.addEventListener("resize",function(){setupMobile()});
 </script>
 </body>
