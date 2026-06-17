@@ -237,17 +237,17 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
 <div class="hdr">
   <button class="hdr-btn" id="menuBtn" onclick="toggleSidebar()" style="display:none"><span class="mi" style="font-size:20px">menu</span></button>
   <div class="logo"><span class="mi">music_note</span>标签刮削<span class="ver">v1.1.3</span></div>
-  <div class="tabs" id="dTabs"><button class="on" data-tab="songs" onclick="switchTab('songs')"><span class="mi" style="font-size:14px">music_note</span> 歌曲</button><button data-tab="failed" onclick="switchTab('failed')"><span class="mi" style="font-size:14px">warning</span> 失败</button></div>
+  <div class="tabs" id="dTabs" role="tablist"><button class="on" data-tab="songs" onclick="switchTab('songs')" role="tab"><span class="mi" style="font-size:14px">music_note</span> 歌曲</button><button data-tab="failed" onclick="switchTab('failed')" role="tab"><span class="mi" style="font-size:14px">warning</span> 失败</button></div>
   <div class="spacer"></div>
   <button class="hdr-btn" onclick="location.reload(true)"><span class="mi" style="font-size:16px">refresh</span></button>
   <button class="hdr-btn" onclick="openCfg()"><span class="mi" style="font-size:16px">settings</span></button>
   <button class="hdr-btn" id="hBtnReadme" onclick="showDoc('README')"><span class="mi" style="font-size:16px">description</span></button>
   <button class="hdr-btn" id="hBtnClog" onclick="showDoc('CHANGELOG')"><span class="mi" style="font-size:16px">history</span></button>
 </div>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-<div id="mTabs" style="display:none">
-  <button class="on" data-tab="songs" onclick="switchTab('songs')"><span class="mi" style="font-size:16px">music_note</span> 歌曲</button>
-  <button data-tab="failed" onclick="switchTab('failed')"><span class="mi" style="font-size:16px">warning</span> 失败</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" role="button" tabindex="0"></div>
+<div id="mTabs" style="display:none" role="tablist">
+  <button class="on" data-tab="songs" onclick="switchTab('songs')" role="tab"><span class="mi" style="font-size:16px">music_note</span> 歌曲</button>
+  <button data-tab="failed" onclick="switchTab('failed')" role="tab"><span class="mi" style="font-size:16px">warning</span> 失败</button>
 </div>
 <div id="app">
   <div class="b-layout">
@@ -263,7 +263,7 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
         <div class="stat-item warn"><div class="num" id="ds-pend">0</div><div class="lbl">待处理</div></div>
       </div>
       <div class="toolbar">
-        <div class="search-row"><input id="searchInput" placeholder="搜索歌曲（回车）..." onkeydown="if(event.key==='Enter')doSearch()"><button class="btn-s" onclick="doSearch()"><span class="mi" style="font-size:18px">search</span></button></div>
+        <div class="search-row"><input id="searchInput" placeholder="搜索歌曲（回车）..." aria-label="搜索歌曲" onkeydown="if(event.key==='Enter')doSearch()"><button class="btn-s" onclick="doSearch()"><span class="mi" style="font-size:18px">search</span></button></div>
         <div class="bc" id="breadcrumb">全部歌曲</div>
         <div class="actions-row">
           <button class="ab pri" onclick="doScrape()" id="btnScrape" disabled><span class="mi">edit_note</span>刮削</button>
@@ -300,22 +300,22 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
       <div class="bar-bottom"><span id="barInfo">全部歌曲</span></div>
       <div class="pbar" id="pbar" style="display:none"><div class="pfill" id="pfill"></div></div>
       <div class="logwrap">
-        <div class="loghead" onclick="this.nextElementSibling.classList.toggle('open')"><span>日志 <span class="badge" id="logBadge">0</span></span><span class="mi" style="font-size:12px">expand_less</span></div>
+        <div class="loghead" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0"><span>日志 <span class="badge" id="logBadge">0</span></span><span class="mi" style="font-size:12px">expand_less</span></div>
         <div class="logbody"><div class="log-content" id="logContent"><div>就绪</div></div></div>
       </div>
     </div>
   </div>
 </div>
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
-<div class="sheet" id="sheet">
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="sheet-head"><h3 id="sheetTitle">编辑歌曲</h3><button class="close-btn" onclick="closeSheet()"><span class="mi" style="font-size:16px">close</span></button></div>
-  <div class="sheet-cover"><div><div class="cover-lg" id="sheetCover" onclick="document.getElementById('ef_cover').click()"><div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div></div><input type="file" id="ef_cover" accept="image/*" style="display:none"><div class="cover-info"><p id="sheetInfo">-</p></div></div></div>
+  <div class="sheet-cover"><div><div class="cover-lg" id="sheetCover" onclick="document.getElementById('ef_cover').click()" role="button" tabindex="0"><div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div></div><input type="file" id="ef_cover" accept="image/*" style="display:none" aria-label="选择封面图片"><div class="cover-info"><p id="sheetInfo">-</p></div></div></div>
   <div class="sheet-body">
-    <div class="fg"><label>标题</label><input id="ef_tit"></div>
-    <div class="fg"><label>艺术家</label><input id="ef_art"></div>
-    <div class="fg"><label>专辑</label><input id="ef_alb"></div>
-    <div class="fg"><label>流派</label><input id="ef_gen"></div>
-    <div class="fg full"><label>歌词</label><textarea id="ef_lyr"></textarea></div>
+    <div class="fg"><label>标题</label><input id="ef_tit" aria-label="标题"></div>
+    <div class="fg"><label>艺术家</label><input id="ef_art" aria-label="艺术家"></div>
+    <div class="fg"><label>专辑</label><input id="ef_alb" aria-label="专辑"></div>
+    <div class="fg"><label>流派</label><input id="ef_gen" aria-label="流派"></div>
+    <div class="fg full"><label>歌词</label><textarea id="ef_lyr" aria-label="歌词"></textarea></div>
   </div>
   <div class="sheet-foot">
     <button class="save" onclick="saveEditSheet()"><span class="mi" style="font-size:13px">save</span> 保存</button>
@@ -323,37 +323,37 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
     <button class="cancel" onclick="closeSheet()">取消</button>
   </div>
 </div>
-<div class="modal" id="cfgModal" onclick="if(event.target===this)closeCfg()">
+<div class="modal" id="cfgModal" onclick="if(event.target===this)closeCfg()" role="dialog" aria-modal="true">
   <div class="mbody">
     <div style="display:flex;justify-content:space-between;margin-bottom:14px"><h3>设置</h3><button class="hdr-btn" onclick="closeCfg()" style="width:28px;height:28px"><span class="mi" style="font-size:14px">close</span></button></div>
     <div class="cfg-sec"><h4>外观</h4>
       <div style="display:flex;gap:6px;align-items:center"><label style="font-size:11px;color:var(--tx-2);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin:0">主题</label>
-        <div class="chips" id="themeChips"><div class="chip on" data-theme="light" onclick="setPluginTheme('light')">浅色</div><div class="chip" data-theme="dark" onclick="setPluginTheme('dark')">深色</div><div class="chip" data-theme="auto" onclick="setPluginTheme('auto')">跟随主程序</div></div>
+        <div class="chips" id="themeChips"><div class="chip on" data-theme="light" onclick="setPluginTheme('light')" aria-pressed="true">浅色</div><div class="chip" data-theme="dark" onclick="setPluginTheme('dark')" aria-pressed="false">深色</div><div class="chip" data-theme="auto" onclick="setPluginTheme('auto')" aria-pressed="false">跟随主程序</div></div>
       </div>
     </div>
     <div class="cfg-sec"><h4>刮削源</h4>
-      <div class="chips" id="srcChips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')">AcoustID</div><div class="chip" onclick="showSrc('src-netease')">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')">酷我</div></div>
-      <div id="src-acoustid" class="src-panel" style="display:block"><div class="cfg"><label>AcoustID Key</label><input id="cfg_ak" placeholder="输入你的 Key"><span class="eg">获取地址：acoustid.org/webservice</span></div></div>
-      <div id="src-netease" class="src-panel" style="display:none"><div class="cfg"><label>网易云 URL</label><input id="cfg_nu" placeholder="输入 API URL"><span class="eg">示例：https://interface.music.163.com/eapi/api/cloudsearch/pc</span></div></div>
-      <div id="src-qqmusic" class="src-panel" style="display:none"><div class="cfg"><label>QQ音乐 URL</label><input id="cfg_qu" placeholder="输入 API URL"><span class="eg">示例：https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span></div></div>
-      <div id="src-kugou" class="src-panel" style="display:none"><div class="cfg"><label>酷狗 URL</label><input id="cfg_ku" placeholder="输入 API URL"><span class="eg">示例：https://songsearch.kugou.com/song_search_v2</span></div></div>
-      <div id="src-kuwo" class="src-panel" style="display:none"><div class="cfg"><label>酷我 URL</label><input id="cfg_kw" placeholder="输入 API URL"><span class="eg">示例：https://kuwo.cn</span></div></div>
+      <div class="chips" id="srcChips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')" aria-pressed="true">AcoustID</div><div class="chip" onclick="showSrc('src-netease')" aria-pressed="false">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')" aria-pressed="false">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')" aria-pressed="false">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')" aria-pressed="false">酷我</div></div>
+      <div id="src-acoustid" class="src-panel" style="display:block"><div class="cfg"><label>AcoustID Key</label><input id="cfg_ak" placeholder="输入你的 Key" aria-label="AcoustID Key"><span class="eg">获取地址：acoustid.org/webservice</span></div></div>
+      <div id="src-netease" class="src-panel" style="display:none"><div class="cfg"><label>网易云 URL</label><input id="cfg_nu" placeholder="输入 API URL" aria-label="网易云 API URL"><span class="eg">示例：https://interface.music.163.com/eapi/api/cloudsearch/pc</span></div></div>
+      <div id="src-qqmusic" class="src-panel" style="display:none"><div class="cfg"><label>QQ音乐 URL</label><input id="cfg_qu" placeholder="输入 API URL" aria-label="QQ音乐 API URL"><span class="eg">示例：https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span></div></div>
+      <div id="src-kugou" class="src-panel" style="display:none"><div class="cfg"><label>酷狗 URL</label><input id="cfg_ku" placeholder="输入 API URL" aria-label="酷狗 API URL"><span class="eg">示例：https://songsearch.kugou.com/song_search_v2</span></div></div>
+      <div id="src-kuwo" class="src-panel" style="display:none"><div class="cfg"><label>酷我 URL</label><input id="cfg_kw" placeholder="输入 API URL" aria-label="酷我 API URL"><span class="eg">示例：https://kuwo.cn</span></div></div>
     </div>
     <button class="save-btn" onclick="saveCfg()">保存配置</button>
   </div>
 </div>
-<div class="modal" id="docModal" onclick="if(event.target===this)closeDoc()">
+<div class="modal" id="docModal" onclick="if(event.target===this)closeDoc()" role="dialog" aria-modal="true">
   <div class="mbody" style="max-width:600px">
     <div style="display:flex;justify-content:space-between;margin-bottom:12px"><h3 id="docTitle">文档</h3><button class="hdr-btn" onclick="closeDoc()" style="width:28px;height:28px"><span class="mi" style="font-size:14px">close</span></button></div>
     <div style="font-size:12px;line-height:1.8;max-height:65vh;overflow-y:auto" id="docBody"></div>
   </div>
 </div>
-<div class="modal" id="retryModal" onclick="if(event.target===this)closeRetry()">
+<div class="modal" id="retryModal" onclick="if(event.target===this)closeRetry()" role="dialog" aria-modal="true">
   <div class="mbody">
     <h3><span class="mi">refresh</span> 手动刮削</h3>
-    <div class="fg"><label>艺术家（选填）</label><input id="ra"></div>
-    <div class="fg"><label>标题（选填）</label><input id="rt"></div>
-    <div class="fg"><label>搜索关键词</label><input id="rk"></div>
+    <div class="fg"><label>艺术家（选填）</label><input id="ra" aria-label="艺术家"></div>
+    <div class="fg"><label>标题（选填）</label><input id="rt" aria-label="标题"></div>
+    <div class="fg"><label>搜索关键词</label><input id="rk" aria-label="搜索关键词"></div>
     <div style="display:flex;gap:6px;margin-top:8px"><button class="ab pri" onclick="doRetry()"><span class="mi">search</span>搜索</button><button class="ab" onclick="closeRetry()">取消</button></div>
     <div id="retryRes" style="margin-top:8px;max-height:180px;overflow-y:auto"></div>
   </div>
@@ -378,7 +378,7 @@ function isMobile(){return window.innerWidth<=768}
 function toggleSidebar(){var sb=E("sidebar"),ov=E("sidebarOverlay");if(sb){sb.classList.toggle("open");if(ov)ov.classList.toggle("open")}}
 function setupMobile(){var mb=E("menuBtn"),dt=E("dTabs"),mt=E("mTabs");if(isMobile()){if(mb)mb.style.display="";if(dt)dt.style.display="none";if(mt)mt.style.display="flex"}else{if(mb)mb.style.display="none";if(dt)dt.style.display="";if(mt)mt.style.display="none";var sb=E("sidebar");if(sb)sb.classList.remove("open");var ov=E("sidebarOverlay");if(ov)ov.classList.remove("open")}}
 
-function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4};var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];var chips=document.querySelectorAll("#srcChips .chip");chips.forEach(function(c,i){c.classList.remove("on");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]])chips[map[panelId]].classList.add("on")}
+function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4};var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];var chips=document.querySelectorAll("#srcChips .chip");chips.forEach(function(c,i){c.classList.remove("on");c.setAttribute("aria-pressed","false");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]]){chips[map[panelId]].classList.add("on");chips[map[panelId]].setAttribute("aria-pressed","true")}}
 
 async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config"),t=await r.text();try{S.cfg=JSON.parse(t);uiCfg();return}catch(e2){if(i<2){await sleep(800);continue}log("cfg parse err","e")}}catch(e){if(i<2){await sleep(800);continue}log("cfg load err:"+e.message,"e")}}}
 function uiCfg(){var el;el=E("cfg_ak");if(el)el.value=S.cfg.acoustid_api_key||"";el=E("cfg_nu");if(el)el.value=S.cfg.netease_api_url||"";el=E("cfg_qu");if(el)el.value=S.cfg.qqmusic_api_url||"";el=E("cfg_ku");if(el)el.value=S.cfg.kugou_api_url||"";el=E("cfg_kw");if(el)el.value=S.cfg.kuwo_api_url||""}
@@ -388,7 +388,7 @@ function syncChips(){var chips=document.querySelectorAll("#srcChips .chip");var 
 var _pluginTheme='light';
 function setPluginTheme(th){_pluginTheme=th;localStorage.setItem('tag-plugin-theme',th);applyPluginTheme();syncThemeChips()}
 function applyPluginTheme(){var th=_pluginTheme;if(th==='auto'){th=(window.SongloftPlugin&&SongloftPlugin.getTheme)?SongloftPlugin.getTheme():'light'}document.documentElement.dataset.theme=th;document.documentElement.className='theme-'+th}
-function syncThemeChips(){var chips=document.querySelectorAll('#themeChips .chip');chips.forEach(function(c){c.classList.toggle('on',c.dataset.theme===_pluginTheme)})}
+function syncThemeChips(){var chips=document.querySelectorAll('#themeChips .chip');chips.forEach(function(c){var sel=c.dataset.theme===_pluginTheme;c.classList.toggle('on',sel);c.setAttribute('aria-pressed',sel?'true':'false')})}
 function openCfg(){syncChips();syncThemeChips();E("cfgModal").classList.add("open")}
 function closeCfg(){E("cfgModal").classList.remove("open")}
 
