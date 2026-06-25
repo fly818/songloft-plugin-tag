@@ -461,19 +461,29 @@ router.get('/songs', async (req) => {
       songs = await songloft.songs.list({ limit, offset });
     }
 
-    const items = songs.map((s: any) => ({
-      id: s.id,
-      title: s.title || '',
-      artist: s.artist || '',
-      album: s.album || '',
-      type: s.type || '',
-      file_path: s.file_path || '',
-      format: s.format || '',
-      duration: s.duration || 0,
-      cover_url: (s as any).cover_url || '',
-      lyrics: (s as any).lyrics || '',
-      genre: (s as any).genre || '',
-    }));
+    let token = '';
+    try { token = await songloft.plugin.getToken(); } catch (e) {}
+
+    const items = songs.map((s: any) => {
+      let cUrl = (s as any).cover_url || '';
+      if (cUrl && !cUrl.startsWith('http://') && !cUrl.startsWith('https://')) {
+        const sep = cUrl.includes('?') ? '&' : '?';
+        cUrl = `${cUrl}${sep}access_token=${token}`;
+      }
+      return {
+        id: s.id,
+        title: s.title || '',
+        artist: s.artist || '',
+        album: s.album || '',
+        type: s.type || '',
+        file_path: s.file_path || '',
+        format: s.format || '',
+        duration: s.duration || 0,
+        cover_url: cUrl,
+        lyrics: (s as any).lyrics || '',
+        genre: (s as any).genre || '',
+      };
+    });
 
     return jsonResponse({ songs: items, total: items.length });
   } catch (e: any) {
