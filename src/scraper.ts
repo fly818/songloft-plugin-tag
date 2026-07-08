@@ -13,6 +13,7 @@ import {
   searchKuWo,
   enrichFromChineseSources,
   extractCandidate,
+  extractCandidates,
   loadConfig,
   type ScraperConfig,
   type SearchResult,
@@ -119,39 +120,47 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   }
 
   const filePath = song.file_path || '';
-  const candidate = extractCandidate(filePath, { artist: song.artist, title: song.title });
+  const candidates = extractCandidates(filePath, { artist: song.artist, title: song.title });
 
   // 繁体→简体，提高国内音源匹配率
-  candidate.artist = toSimplified(candidate.artist);
-  candidate.title = toSimplified(candidate.title);
+  for (const c of candidates) {
+    c.artist = toSimplified(c.artist);
+    c.title = toSimplified(c.title);
+  }
+
+  const candidate = candidates[0];
 
   if (!candidate.title) {
     songloft.log.warn(`[scraper] 无法确定搜索关键词: ${songId}`);
     return null;
   }
 
-  const keyword = `${candidate.artist} ${candidate.title}`.trim();
-  songloft.log.info(`[scraper] 开始刮削: ${keyword} (songId=${songId})`);
+  // 文本搜索：先用第一个候选词搜索，若得分不佳且有反向候选则重试
+  let bestResult: ScrapeResult | null = null;
+  let bestScore = -1;
 
-  // 2. 声纹优先（使用主程序已计算的指纹）
-  if (!cfg.enable_acoustid) {
-    songloft.log.info(`[scraper] AcoustID 未启用 (cfg.enable_acoustid=${cfg.enable_acoustid})`);
-  } else if (!song.fingerprint) {
-    songloft.log.info(`[scraper] AcoustID 跳过: 歌曲无指纹 (主程序扫描后异步计算，请稍后重试)`);
-  } else {
-    const acoustidResults = await searchAcoustid(song.fingerprint, song.fingerprint_duration || song.duration || 0, cfg.acoustid_api_key);
+  for (let ci = 0; ci < candidates.length; ci++) {
+    const c = candidates[ci];
+    const keyword = `${c.artist} ${c.title}`.trim();
+    songloft.log.info(`[scraper] 开始刮削: ${keyword} (songId=${songId}${ci > 0 ? ', 反向排序' : ''})`);
+
+    // 2. 声纹优先（使用主程序已计算的指纹）
+    if (!cfg.enable_acoustid) {
+      songloft.log.info(`[scraper] AcoustID 未启用 (cfg.enable_acoustid=${cfg.enable_acoustid})`);
+    } else if (!song.fingerprint) {
+      songloft.log.info(`[scraper] AcoustID 跳过: 歌曲无指纹 (主程序扫描后异步计算，请稍后重试)`);
+    } else {
+      const acoustidResults = await searchAcoustid(song.fingerprint, song.fingerprint_duration || song.duration || 0, cfg.acoustid_api_key);
       if (acoustidResults.length > 0) {
         const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
         if (best.score > SCORE_THRESHOLD) {
           songloft.log.info(`[scraper] 声纹匹配成功: ${best.artist} - ${best.title} (${best.score.toFixed(2)})`);
 
-          // 繁→简转换
           best.artist = toSimplified(best.artist);
           best.title = toSimplified(best.title);
           best.album = toSimplified(best.album);
 
-          // 去国内源富化封面 + 歌词
-          const enrich = await enrichFromChineseSources(best.artist, best.title, candidate, cfg);
+          const enrich = await enrichFromChineseSources(best.artist, best.title, c, cfg);
           if (enrich.cover_url) {
             best.cover_url = enrich.cover_url;
             songloft.log.info(`[scraper] 封面来自 ${enrich.source}: ${enrich.cover_url.substring(0, 60)}...`);
@@ -160,71 +169,78 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
             best.lyrics = enrich.lyrics;
           }
 
-          return buildResult(songId, best, candidate, {});
+          return buildResult(songId, best, c, {});
         }
       }
-  }
-
-  // 3. 文本搜索兜底（多源并发）
-  const sourceScores: Record<string, number> = {};
-  const allResults: SearchResult[] = [];
-
-  const addSourceResults = (results: SearchResult[], sourceName: string) => {
-    let bestScore = 0;
-    for (const r of results) {
-      const s = scoreMatch(candidate, r);
-      r.score = s;
-      if (s > bestScore) bestScore = s;
     }
-    sourceScores[sourceName] = bestScore;
-    allResults.push(...results);
-  };
 
-  // 并发查询所有已启用的源
-  const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
+    // 3. 文本搜索兜底（多源并发）
+    const sourceScores: Record<string, number> = {};
+    const allResults: SearchResult[] = [];
 
-  if (cfg.enable_netease && cfg.netease_api_url) {
-    tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({ results: r, source: 'netease' as const })));
-  }
-  if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-    tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({ results: r, source: 'qqmusic' as const })));
-  }
-  if (cfg.enable_kugou && cfg.kugou_api_url) {
-    tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({ results: r, source: 'kugou' as const })));
-  }
-  tasks.push(searchMiGu(keyword).then(r => ({ results: r, source: 'migu' as const })));
-  if (cfg.enable_kuwo) {
-    tasks.push(searchKuWo(keyword).then(r => ({ results: r, source: 'kuwo' as const })));
-  }
+    const addSourceResults = (results: SearchResult[], sourceName: string) => {
+      let srcBestScore = 0;
+      for (const r of results) {
+        const s = scoreMatch(c, r);
+        r.score = s;
+        if (s > srcBestScore) srcBestScore = s;
+      }
+      sourceScores[sourceName] = srcBestScore;
+      allResults.push(...results);
+    };
 
-  const settled = await Promise.allSettled(tasks);
-  for (const s of settled) {
-    if (s.status === 'fulfilled') {
-      addSourceResults(s.value.results, s.value.source);
+    const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
+
+    if (cfg.enable_netease && cfg.netease_api_url) {
+      tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({ results: r, source: 'netease' as const })));
     }
-  }
-
-  // 日志输出各源得分
-  const logParts = Object.entries(sourceScores).map(([k, v]) => `${k}=${v.toFixed(2)}`);
-  songloft.log.info(`[scraper] 文本刮削得分: ${logParts.join(', ') || '无结果'}`);
-
-  // 4. 选择最佳
-  let globalBest: SearchResult | null = null;
-  let globalBestScore = -1;
-  for (const r of allResults) {
-    if (r.score > globalBestScore) {
-      globalBestScore = r.score;
-      globalBest = r;
+    if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
+      tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({ results: r, source: 'qqmusic' as const })));
     }
+    if (cfg.enable_kugou && cfg.kugou_api_url) {
+      tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({ results: r, source: 'kugou' as const })));
+    }
+    tasks.push(searchMiGu(keyword).then(r => ({ results: r, source: 'migu' as const })));
+    if (cfg.enable_kuwo) {
+      tasks.push(searchKuWo(keyword).then(r => ({ results: r, source: 'kuwo' as const })));
+    }
+
+    const settled = await Promise.allSettled(tasks);
+    for (const s of settled) {
+      if (s.status === 'fulfilled') {
+        addSourceResults(s.value.results, s.value.source);
+      }
+    }
+
+    const logParts = Object.entries(sourceScores).map(([k, v]) => `${k}=${v.toFixed(2)}`);
+    songloft.log.info(`[scraper] 文本刮削得分: ${logParts.join(', ') || '无结果'}`);
+
+    // 选择本轮最佳
+    let roundBest: SearchResult | null = null;
+    let roundBestScore = -1;
+    for (const r of allResults) {
+      if (r.score > roundBestScore) {
+        roundBestScore = r.score;
+        roundBest = r;
+      }
+    }
+
+    if (roundBest && roundBestScore > bestScore) {
+      bestScore = roundBestScore;
+      bestResult = buildResult(songId, roundBest, c, sourceScores);
+    }
+
+    // 首轮得分已够好，不再尝试反向排序
+    if (isScoreAcceptable(bestScore)) break;
   }
 
-  if (!globalBest || !isScoreAcceptable(globalBestScore)) {
-    songloft.log.info(`[scraper] 最佳得分 ${globalBestScore.toFixed(2)} 低于阈值 ${SCORE_THRESHOLD}，刮削失败`);
+  if (!bestResult || !isScoreAcceptable(bestScore)) {
+    songloft.log.info(`[scraper] 最佳得分 ${bestScore.toFixed(2)} 低于阈值 ${SCORE_THRESHOLD}，刮削失败`);
     return null;
   }
 
-  songloft.log.info(`[scraper] 选用 ${globalBest.source} (${globalBestScore.toFixed(2)})`);
-  return buildResult(songId, globalBest, candidate, sourceScores);
+  songloft.log.info(`[scraper] 选用 ${bestResult.source} (${bestResult.score.toFixed(2)})`);
+  return bestResult;
 }
 
 function buildResult(

@@ -734,7 +734,7 @@ export function extractCandidate(filePath: string, existingTags?: { artist?: str
     }
   }
 
-  // 从文件名提取 "艺术家 - 歌名" 模式
+  // 从文件名提取 "艺术家 - 歌名" 或 "歌名 - 艺术家" 模式
   const fileName = cleanFilenameNoise(
     filePath.replace(/^.*[/\\]/, '').replace(/\.[^.]+$/, '')
   );
@@ -745,6 +745,39 @@ export function extractCandidate(filePath: string, existingTags?: { artist?: str
   }
 
   return { artist: '', title: fileName };
+}
+
+/**
+ * 返回文件名的两种候选排序（artist-title 和 title-artist），
+ * 供 doScrape 在得分不佳时尝试反向排序。
+ * 若文件名不含分隔符或无 DB 元数据，则只返回一种。
+ */
+export function extractCandidates(filePath: string, existingTags?: { artist?: string; title?: string }): { artist: string; title: string }[] {
+  // 有有效 DB 元数据时只返回一种
+  if (existingTags?.artist && existingTags?.title) {
+    const art = cleanFilenameNoise(existingTags.artist);
+    const tit = cleanFilenameNoise(existingTags.title);
+    if (!GARBAGE_TITLE.test(tit) && !GARBAGE_ARTIST.test(art)) {
+      return [{ artist: art, title: tit }];
+    }
+  }
+
+  const fileName = cleanFilenameNoise(
+    filePath.replace(/^.*[/\\]/, '').replace(/\.[^.]+$/, '')
+  );
+
+  const match = fileName.match(/^(.+?)\s*-\s*(.+?)(?:\s*\(.*?\))?\s*$/);
+  if (match) {
+    const a = cleanFilenameNoise(match[1]);
+    const b = cleanFilenameNoise(match[2]);
+    // 两种排序：正常 (a - b) 和反向 (b - a)，去重
+    const primary = { artist: a, title: b };
+    const reversed = { artist: b, title: a };
+    if (a === b) return [primary];
+    return [primary, reversed];
+  }
+
+  return [{ artist: '', title: fileName }];
 }
 
 /** 剥离音质/版本标签，提高搜索匹配率 */
