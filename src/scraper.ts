@@ -18,9 +18,9 @@ import {
   type ScraperConfig,
   type SearchResult,
 } from './sources';
-import { scoreMatch, isScoreAcceptable, SCORE_THRESHOLD } from './scoring';
+import { scoreMatch } from './scoring';
 import { toSimplified } from './t2s';
-import { cacheGet, cacheSet } from './cache';
+import { cacheGet, cacheSet, cacheCleanup } from './cache';
 import { rateLimitWait } from './ratelimit';
 
 export interface ScrapeResult {
@@ -106,6 +106,9 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
     }
   }
 
+  // 批量刮削完成后清理过期缓存
+  cacheCleanup().catch(() => {});
+
   return { results, success, skipped, skippedIds, failed, failedIds };
 }
 
@@ -144,7 +147,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   // 检查缓存
   const cacheKey = `${candidate.artist} ${candidate.title}`;
   const cached = await cacheGet<SearchResult>(candidate.artist, candidate.title);
-  if (cached && isScoreAcceptable(cached.score)) {
+  if (cached && cached.score >= cfg.score_threshold) {
     songloft.log.info(`[scraper] 缓存命中: ${cached.artist} - ${cached.title} (${cached.score.toFixed(2)})`);
     return buildResult(songId, cached, candidate, {});
   }
@@ -164,7 +167,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
       const acoustidResults = await searchAcoustid(song.fingerprint, song.fingerprint_duration || song.duration || 0, cfg.acoustid_api_key);
       if (acoustidResults.length > 0) {
         const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
-        if (best.score > SCORE_THRESHOLD) {
+        if (best.score > cfg.score_threshold) {
           songloft.log.info(`[scraper] 声纹匹配成功: ${best.artist} - ${best.title} (${best.score.toFixed(2)})`);
 
           best.artist = toSimplified(best.artist);
@@ -242,11 +245,11 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     }
 
     // 首轮得分已够好，不再尝试反向排序
-    if (isScoreAcceptable(bestScore)) break;
+    if (bestScore >= cfg.score_threshold) break;
   }
 
-  if (!bestResult || !isScoreAcceptable(bestScore)) {
-    songloft.log.info(`[scraper] 最佳得分 ${bestScore.toFixed(2)} 低于阈值 ${SCORE_THRESHOLD}，刮削失败`);
+  if (!bestResult || bestScore < cfg.score_threshold) {
+    songloft.log.info(`[scraper] 最佳得分 ${bestScore.toFixed(2)} 低于阈值 ${cfg.score_threshold}，刮削失败`);
     return null;
   }
 

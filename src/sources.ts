@@ -110,6 +110,8 @@ export interface ScraperConfig {
   kugou_api_url: string;          // 示例: https://songsearch.kugou.com/song_search_v2
   enable_kuwo: boolean;
   kuwo_api_url: string;           // 示例: https://kuwo.cn
+  /** 评分阈值，低于此分数视为匹配失败（默认 0.7） */
+  score_threshold: number;
 }
 
 export const DEFAULT_CONFIG: ScraperConfig = {
@@ -123,6 +125,7 @@ export const DEFAULT_CONFIG: ScraperConfig = {
   kugou_api_url: '',
   enable_kuwo: false,
   kuwo_api_url: '',
+  score_threshold: 0.7,
 };
 
 // ---- 搜索结果类型 ----
@@ -697,7 +700,7 @@ export async function enrichFromChineseSources(
     }
   }
 
-  // 拉歌词
+  // 拉歌词（多源兜底：最佳源失败时尝试其他有 sourceId 的源）
   let lyrics = '';
   if (best.sourceId) {
     try {
@@ -706,7 +709,20 @@ export async function enrichFromChineseSources(
         songloft.log.info(`[enrich] 歌词下载成功 (${best.source}, ${lyrics.length} 字)`);
       }
     } catch (e: any) {
-      songloft.log.warn(`[enrich] 歌词下载失败: ${e.message || e}`);
+      songloft.log.warn(`[enrich] 歌词下载失败 (${best.source}): ${e.message || e}`);
+    }
+  }
+  // 多源兜底
+  if (!lyrics) {
+    for (const r of allResults) {
+      if (r.source === best.source || !r.sourceId) continue;
+      try {
+        lyrics = await fetchLyricsForResult(r);
+        if (lyrics) {
+          songloft.log.info(`[enrich] 歌词兜底成功 (${r.source}, ${lyrics.length} 字)`);
+          break;
+        }
+      } catch { /* ignore */ }
     }
   }
 
