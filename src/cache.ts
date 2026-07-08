@@ -1,0 +1,77 @@
+/// <reference types="@songloft/plugin-sdk" />
+
+// ============================================================
+// 结果缓存 — 24 小时本地 KV 缓存，避免重复请求
+// ============================================================
+
+const CACHE_KEY_PREFIX = 'scrape_cache_';
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 小时
+
+interface CacheEntry {
+  data: any;
+  ts: number;
+}
+
+/**
+ * 简易哈希：将字符串转为稳定的短 key
+ */
+function hashKey(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * 从缓存读取
+ */
+export async function cacheGet<T>(artist: string, title: string): Promise<T | null> {
+  try {
+    const key = CACHE_KEY_PREFIX + hashKey(artist.toLowerCase() + '|' + title.toLowerCase());
+    const raw = await songloft.storage.get(key);
+    if (!raw) return null;
+    const entry: CacheEntry = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Date.now() - entry.ts > CACHE_TTL) {
+      await songloft.storage.set(key, null);
+      return null;
+    }
+    return entry.data as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 写入缓存
+ */
+export async function cacheSet(artist: string, title: string, data: any): Promise<void> {
+  try {
+    const key = CACHE_KEY_PREFIX + hashKey(artist.toLowerCase() + '|' + title.toLowerCase());
+    const entry: CacheEntry = { data, ts: Date.now() };
+    await songloft.storage.set(key, JSON.stringify(entry));
+  } catch { /* ignore */ }
+}
+
+/**
+ * 清理过期缓存（可选，调用时机：批量刮削完成时）
+ */
+export async function cacheCleanup(): Promise<void> {
+  try {
+    const all = await songloft.storage.get('cache_keys');
+    const keys: string[] = Array.isArray(all) ? all : [];
+    const now = Date.now();
+    const alive: string[] = [];
+    for (const k of keys) {
+      const raw = await songloft.storage.get(k);
+      if (!raw) continue;
+      const entry: CacheEntry = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (now - entry.ts > CACHE_TTL) {
+        await songloft.storage.set(k, null);
+      } else {
+        alive.push(k);
+      }
+    }
+    await songloft.storage.set('cache_keys', JSON.stringify(alive));
+  } catch { /* ignore */ }
+}

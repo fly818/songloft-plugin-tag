@@ -135,6 +135,8 @@ export interface SearchResult {
   release_date?: string;
   /** 源内 ID，用于查歌词（网易云 songId / QQ songmid / 酷狗 hash） */
   sourceId?: string;
+  /** 时长（秒），用于时长惩罚 */
+  duration?: number;
   score: number;
   source: string;
 }
@@ -195,7 +197,7 @@ export async function searchAcoustid(fingerprint: string, duration: number, apiK
   }
 }
 
-async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; title: string; album: string } | null> {
+async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; title: string; album: string; duration?: number } | null> {
   try {
     const rt = await fetchWithRetry(
       `https://musicbrainz.org/ws/2/recording/${recordingId}?inc=artists+releases&fmt=json`,
@@ -208,6 +210,7 @@ async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; 
     const mb = await resp.json();
     const artist = mb['artist-credit']?.[0]?.artist?.name || mb['artist-credit']?.[0]?.name || '';
     const title = mb.title || '';
+    const duration = mb.length ? Math.round(mb.length / 1000) : undefined;
 
     let album = '';
     const releases = mb.releases || [];
@@ -222,7 +225,7 @@ async function fetchMusicBrainz(recordingId: string): Promise<{ artist: string; 
     }
 
     if (artist && title) {
-      return { artist, title, album };
+      return { artist, title, album, duration };
     }
     return null;
   } catch {

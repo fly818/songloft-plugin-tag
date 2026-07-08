@@ -1,6 +1,6 @@
 {
   "name": "标签刮削",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "智能刮削音乐标签：多源并发搜索 + 多级目录浏览，自动修正标题/艺术家/专辑，下载封面并写入音频文件",
   "author": "Songloft Team",
   "entryPath": "tag",
@@ -11,8 +11,8 @@
     "storage",
     "songs.read"
   ],
-  "entryHash": "c0f06a2172351309ecc42bea50976ffec9de3914141ea2ffd111dd72186bf173",
-  "zipHash": "91e1e95870cb119b3bb29f2cf5c2147023cdc16f3492689c7e511cf3afcec547",
+  "entryHash": "771938f1920882b68944c75ad12b3ee2512ac8dcd5f14af621a55b7f096a69be",
+  "zipHash": "5a8afab3841808c9e999490cd954e95c9c22637fa1829fb70cc8a857ec605046",
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-tag/main/plugin.json",
-  "download_url": "https://github.com/songloft-org/songloft-plugin-tag/releases/download/v1.1.4/tag.jsplugin.zip"
+  "download_url": "https://github.com/songloft-org/songloft-plugin-tag/releases/download/v1.1.5/tag.jsplugin.zip"
 }

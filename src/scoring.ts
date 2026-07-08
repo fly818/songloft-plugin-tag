@@ -145,11 +145,11 @@ export const SOURCE_WEIGHTS: Record<string, number> = {
 /**
  * 计算候选标签与搜索结果的匹配得分
  * 公式: 0.4 × artist_similarity + 0.6 × title_similarity
- * 再乘以源权重
+ * 再乘以源权重，最后应用时长惩罚
  */
 export function scoreMatch(
-  candidate: { artist: string; title: string },
-  result: { artist: string; title: string; source: string }
+  candidate: { artist: string; title: string; duration?: number },
+  result: { artist: string; title: string; source: string; duration?: number }
 ): number {
   const artistCand = (candidate.artist || '').trim().toLowerCase();
   const titleCand = (candidate.title || '').trim().toLowerCase();
@@ -160,9 +160,20 @@ export function scoreMatch(
 
   const artistSim = sequenceSimilarity(artistCand, artistRes);
   const titleSim = sequenceSimilarity(titleCand, titleRes);
-  const rawScore = 0.4 * artistSim + 0.6 * titleSim;
+  let rawScore = 0.4 * artistSim + 0.6 * titleSim;
   const weight = SOURCE_WEIGHTS[result.source] || 0.8;
-  return rawScore * weight;
+  let score = rawScore * weight;
+
+  // 时长惩罚：时长差 > 5s 时按差值扣分
+  if (candidate.duration && result.duration && candidate.duration > 0 && result.duration > 0) {
+    const diff = Math.abs(candidate.duration - result.duration);
+    if (diff > 5) {
+      const penalty = Math.min(0.5, (diff - 5) * 0.02);
+      score *= (1 - penalty);
+    }
+  }
+
+  return score;
 }
 
 /**

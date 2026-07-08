@@ -20,6 +20,8 @@ import {
 } from './sources';
 import { scoreMatch, isScoreAcceptable, SCORE_THRESHOLD } from './scoring';
 import { toSimplified } from './t2s';
+import { cacheGet, cacheSet } from './cache';
+import { rateLimitWait } from './ratelimit';
 
 export interface ScrapeResult {
   songId: number;
@@ -139,6 +141,14 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   let bestResult: ScrapeResult | null = null;
   let bestScore = -1;
 
+  // 检查缓存
+  const cacheKey = `${candidate.artist} ${candidate.title}`;
+  const cached = await cacheGet<SearchResult>(candidate.artist, candidate.title);
+  if (cached && isScoreAcceptable(cached.score)) {
+    songloft.log.info(`[scraper] 缓存命中: ${cached.artist} - ${cached.title} (${cached.score.toFixed(2)})`);
+    return buildResult(songId, cached, candidate, {});
+  }
+
   for (let ci = 0; ci < candidates.length; ci++) {
     const c = candidates[ci];
     const keyword = `${c.artist} ${c.title}`.trim();
@@ -150,6 +160,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     } else if (!song.fingerprint) {
       songloft.log.info(`[scraper] AcoustID 跳过: 歌曲无指纹 (主程序扫描后异步计算，请稍后重试)`);
     } else {
+      await rateLimitWait('acoustid');
       const acoustidResults = await searchAcoustid(song.fingerprint, song.fingerprint_duration || song.duration || 0, cfg.acoustid_api_key);
       if (acoustidResults.length > 0) {
         const best = acoustidResults.reduce((a, b) => a.score > b.score ? a : b);
@@ -181,7 +192,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     const addSourceResults = (results: SearchResult[], sourceName: string) => {
       let srcBestScore = 0;
       for (const r of results) {
-        const s = scoreMatch(c, r);
+        const s = scoreMatch({ ...c, duration: song.duration }, r);
         r.score = s;
         if (s > srcBestScore) srcBestScore = s;
       }
@@ -192,17 +203,17 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
 
     if (cfg.enable_netease && cfg.netease_api_url) {
-      tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({ results: r, source: 'netease' as const })));
+      tasks.push(rateLimitWait('netease').then(() => searchNetease(keyword, cfg.netease_api_url)).then(r => ({ results: r, source: 'netease' as const })));
     }
     if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-      tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({ results: r, source: 'qqmusic' as const })));
+      tasks.push(rateLimitWait('qqmusic').then(() => searchQQMusic(keyword, cfg.qqmusic_api_url)).then(r => ({ results: r, source: 'qqmusic' as const })));
     }
     if (cfg.enable_kugou && cfg.kugou_api_url) {
-      tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({ results: r, source: 'kugou' as const })));
+      tasks.push(rateLimitWait('kugou').then(() => searchKuGou(keyword, cfg.kugou_api_url)).then(r => ({ results: r, source: 'kugou' as const })));
     }
-    tasks.push(searchMiGu(keyword).then(r => ({ results: r, source: 'migu' as const })));
+    tasks.push(rateLimitWait('migu').then(() => searchMiGu(keyword)).then(r => ({ results: r, source: 'migu' as const })));
     if (cfg.enable_kuwo) {
-      tasks.push(searchKuWo(keyword).then(r => ({ results: r, source: 'kuwo' as const })));
+      tasks.push(rateLimitWait('kuwo').then(() => searchKuWo(keyword)).then(r => ({ results: r, source: 'kuwo' as const })));
     }
 
     const settled = await Promise.allSettled(tasks);
@@ -238,6 +249,17 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     songloft.log.info(`[scraper] 最佳得分 ${bestScore.toFixed(2)} 低于阈值 ${SCORE_THRESHOLD}，刮削失败`);
     return null;
   }
+
+  // 写入缓存
+  await cacheSet(candidate.artist, candidate.title, {
+    artist: bestResult.artist,
+    title: bestResult.title,
+    album: bestResult.album,
+    cover_url: bestResult.cover_url,
+    lyrics: bestResult.lyrics,
+    source: bestResult.source,
+    score: bestResult.score,
+  });
 
   songloft.log.info(`[scraper] 选用 ${bestResult.source} (${bestResult.score.toFixed(2)})`);
   return bestResult;
