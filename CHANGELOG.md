@@ -4,24 +4,25 @@
 
 ### 新增
 - **增量扫描 API**：`POST /scrape/incremental`，自动扫描所有未处理歌曲
-- **歌词双语合并**：网易云歌词原文+翻译按时间戳对齐
+- **歌词双语合并**：歌词原文+翻译按时间戳对齐
 - **批量取消 API**：`POST /scrape/batch/cancel`，后端任务可被取消
 
 ### 改进
-- **MiGu 音源开关**：新增 `enable_migu` 配置项，默认关闭
+- **音源独立开关**：各音源可单独启用/禁用
 - **批量任务可取消**：停止按钮同时取消后端任务，不再空跑
-- **clearCover 保留元数据**：清除封面时保留 genre/year/track
+- **clearCover 保留元数据**：清除封面时保留流派/年份/音轨号
 - **POST /storage/failed**：修复 body 未解析导致数据丢失
 
 ### 安全
-- **md2html XSS 防护**：链接只允许 http/https 协议，阻止 javascript: 注入
-- **kuwo_api_url SSRF 检查**：配置 PUT 增加 kuwo 内网地址拦截
+- **链接安全**：markdown 链接只允许 http/https 协议，阻止 javascript: 注入
+- **SSRF 防护**：配置 URL 增加内网地址拦截
 
 ### 修复
-- **reportStats 版本号**：从硬编码 2.0.1 更新为 2.1.1
-- **QQ Music year 字段**：修复无意义三元表达式，返回空字符串
-- **onDeinit 清理**：标记所有任务为已取消
-- **移除死代码**：SCORE_THRESHOLD、isScoreAcceptable、重复 sleep()
+- **版本号同步**：所有文件统一为 2.1.1
+- **统计版本号**：修复硬编码旧版本号
+- **年份字段**：修复搜索结果年份字段处理
+- **onDeinit 清理**：插件卸载时标记任务取消
+- **移除死代码**：清理未使用的常量和函数
 
 ---
 
