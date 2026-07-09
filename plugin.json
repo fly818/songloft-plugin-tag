@@ -1,6 +1,6 @@
 {
   "name": "标签刮削",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "智能刮削音乐标签：多源并发搜索 + 多级目录浏览，自动修正标题/艺术家/专辑，下载封面并写入音频文件",
   "author": "Songloft Team",
   "entryPath": "tag",

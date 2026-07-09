@@ -486,6 +486,8 @@ router.get('/song/:id', async (_req, params) => {
       cover_url: coverUrl,
       lyrics: lyrics,
       genre: s.genre || '',
+      year: s.year || '',
+      track: s.track_number || '',
       file_path: s.file_path || '',
     });
   } catch (e: any) {
@@ -561,6 +563,8 @@ router.get('/songs', async (req) => {
         cover_url: cUrl,
         lyrics: (s as any).lyrics || '',
         genre: (s as any).genre || '',
+        year: (s as any).year || '',
+        track: (s as any).track_number || '',
       };
     });
 

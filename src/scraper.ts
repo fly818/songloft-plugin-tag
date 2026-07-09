@@ -29,6 +29,9 @@ export interface ScrapeResult {
   artist: string;
   title: string;
   album: string;
+  genre?: string;
+  year?: string;
+  track?: string;
   lyrics?: string;
   cover_url?: string;
   cover_data?: string;  // base64
@@ -303,6 +306,9 @@ function buildResult(
     artist: best.artist || candidate.artist,
     title: best.title || candidate.title,
     album: best.album || '',
+    genre: best.genre || '',
+    year: best.year || '',
+    track: best.track || '',
     lyrics: best.lyrics || '',
     cover_url: best.cover_url,
     source: best.source,
@@ -324,6 +330,9 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       title: result.title,
       artist: result.artist,
       album: result.album || '',
+      genre: result.genre || '',
+      year: result.year || '',
+      track: result.track || '',
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
     };

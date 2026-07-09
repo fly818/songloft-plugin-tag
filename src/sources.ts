@@ -137,6 +137,9 @@ export interface SearchResult {
   cover_url?: string;
   lyrics?: string;
   release_date?: string;
+  genre?: string;
+  year?: string;
+  track?: string;
   /** 源内 ID，用于查歌词（网易云 songId / QQ songmid / 酷狗 hash） */
   sourceId?: string;
   /** 时长（秒），用于时长惩罚 */
@@ -320,6 +323,9 @@ export async function searchNetease(keyword: string, apiUrl: string): Promise<Se
         cover_url: s.al?.picUrl ? s.al.picUrl + '?param=500y500' : undefined,
         sourceId: s.id ? String(s.id) : undefined,
         release_date: undefined,
+        genre: s.t?.[0]?.name || '',
+        year: s.publishTime ? String(new Date(s.publishTime).getFullYear()) : '',
+        track: s.no ? String(s.no) : '',
         score: 0,
         source: 'netease',
       }));
@@ -351,6 +357,9 @@ export async function searchNetease(keyword: string, apiUrl: string): Promise<Se
       cover_url: s.al?.picUrl ? s.al.picUrl + '?param=500y500' : undefined,
       sourceId: s.id ? String(s.id) : undefined,
       release_date: undefined,
+      genre: s.t?.[0]?.name || '',
+      year: s.publishTime ? String(new Date(s.publishTime).getFullYear()) : '',
+      track: s.no ? String(s.no) : '',
       score: 0,
       source: 'netease',
     }));
@@ -385,6 +394,9 @@ export async function searchQQMusic(keyword: string, apiUrl: string): Promise<Se
       cover_url: s.albummid ? `https://y.gtimg.cn/music/photo_new/T002R500x500M000${s.albummid}.jpg` : undefined,
       sourceId: s.songmid || undefined,
       release_date: undefined,
+      genre: '',
+      year: s.interval ? '' : '',
+      track: s.index ? String(s.index) : '',
       score: 0,
       source: 'qqmusic',
     }));
@@ -414,6 +426,9 @@ export async function searchKuGou(keyword: string, apiUrl: string): Promise<Sear
       cover_url: s.AlbumImg?.replace(/\/{2,}/g, '/') || undefined,
       sourceId: s.Hash || s.FileHash || undefined,
       release_date: undefined,
+      genre: '',
+      year: s.Chapter || '',
+      track: s.FileSort ? String(s.FileSort) : '',
       score: 0,
       source: 'kugou',
     }));
@@ -474,6 +489,9 @@ export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
       cover_url: s.imgItems?.[s.imgItems.length - 1]?.img ? `https://d.musicapp.migu.cn${s.imgItems[s.imgItems.length - 1].img}` : undefined,
       sourceId: s.contentId ? String(s.contentId) : undefined,
       release_date: undefined,
+      genre: s.tagNames || '',
+      year: s.copyright ? String(s.copyright) : '',
+      track: s.songId || '',
       score: 0,
       source: 'migu',
     }));
@@ -505,6 +523,9 @@ export async function searchKuWo(keyword: string): Promise<SearchResult[]> {
       cover_url: s.hts_MVPIC || (s.web_albumpic_short ? `https://img1.kuwo.cn/star/albumcover/${s.web_albumpic_short}` : undefined),
       sourceId: s.MUSICRID ? String(s.MUSICRID) : undefined,
       release_date: undefined,
+      genre: s.GENRE || '',
+      year: s.YEAR || '',
+      track: s.track_number || '',
       score: 0,
       source: 'kuwo',
     }));
