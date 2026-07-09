@@ -2,7 +2,7 @@
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
 import { toSimplified } from './t2s';
 import { scrapeSong, scrapeBatch, doScrape, writeTags, clearCover, type ScrapeResult } from './scraper';
-import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig } from './sources';
+import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig, type SearchResult } from './sources';
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
 import { circuitStatus, circuitReset } from './circuit';
@@ -80,16 +80,13 @@ async function reportStats(): Promise<void> {
 function parseBody(req: any): any {
   const raw = req.body;
   if (!raw) return {};
-  // Uint8Array or array-like
-  if (typeof raw === 'object' && typeof raw.length === 'number' && typeof raw[0] === 'number') {
-    let str = '';
-    for (let i = 0; i < raw.length; i++) str += String.fromCharCode(raw[i]);
-    try { return JSON.parse(str); } catch { return {}; }
-  }
-  if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return {}; }
-  }
-  if (typeof raw === 'object') return raw;
+  try {
+    if (typeof raw === 'string') return JSON.parse(raw);
+    if (raw instanceof Uint8Array || (typeof raw === 'object' && typeof raw.length === 'number' && typeof raw[0] === 'number')) {
+      return JSON.parse(new TextDecoder().decode(raw));
+    }
+    if (typeof raw === 'object') return raw;
+  } catch {}
   return {};
 }
 
@@ -331,6 +328,37 @@ router.get('/test/t2s', async (_req) => {
 // 刮削
 // ============================================================
 
+// 批量任务执行器
+async function runBatchTask(taskId: string, task: any): Promise<void> {
+  const cfg = await loadConfig();
+  for (const songId of task.ids) {
+    try {
+      const result = await doScrape(songId, cfg);
+      if (!result) {
+        songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
+        task.skipped++;
+        task.skippedIds.push(songId);
+      } else {
+        const ws = await writeTags(songId, result);
+        result.fileWriteStatus = ws;
+        task.results.push(result);
+        if (ws === 'written' || ws === 'unchanged' || ws === 'skipped') {
+          task.success++;
+          await markScrapedDone(songId);
+        } else {
+          task.failed++;
+          task.failedIds.push(songId);
+        }
+      }
+    } catch {
+      task.failed++;
+      task.failedIds.push(songId);
+    }
+    task.current++;
+  }
+  task.status = 'done';
+}
+
 // 批量刮削（异步+轮询，解决超时）
 router.post('/scrape/batch', async (req) => {
   const body = parseBody(req);
@@ -357,35 +385,7 @@ router.post('/scrape/batch', async (req) => {
   batchTasks.set(taskId, task);
 
   // 异步执行
-  setTimeout(async () => {
-    const cfg = await loadConfig();
-    for (const songId of task.ids) {
-      try {
-        const result = await doScrape(songId, cfg);
-        if (!result) {
-          songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
-          task.skipped++;
-          task.skippedIds.push(songId);
-        } else {
-          const ws = await writeTags(songId, result);
-          result.fileWriteStatus = ws;
-          task.results.push(result);
-          if (ws === 'written' || ws === 'unchanged' || ws === 'skipped') {
-            task.success++;
-            await markScrapedDone(songId);
-          } else {
-            task.failed++;
-            task.failedIds.push(songId);
-          }
-        }
-      } catch {
-        task.failed++;
-        task.failedIds.push(songId);
-      }
-      task.current++;
-    }
-    task.status = 'done';
-  }, 100);
+  setTimeout(() => runBatchTask(taskId, task), 100);
 
   return jsonResponse({ taskId, status: 'started', total: newIds.length, skipped: skipIds.length });
 });
@@ -414,6 +414,41 @@ router.get('/scrape/batch/progress', async (req) => {
     skippedIds: task.skippedIds.length ? task.skippedIds : undefined,
     failedIds: task.failedIds.length ? task.failedIds : undefined,
   });
+});
+
+// 增量扫描：自动扫描所有未处理的歌曲
+router.post('/scrape/incremental', async () => {
+  try {
+    const songs = await songloft.songs.list({ limit: 10000 });
+    const doneIds = await getScrapedDone();
+    const newIds = songs
+      .map(s => Number(s.id))
+      .filter(id => !doneIds.has(id));
+
+    if (!newIds.length) return jsonResponse({ message: '没有新的歌曲需要刮削', count: 0 });
+
+    // 复用 batch 逻辑
+    const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const task = {
+      ids: newIds, current: 0, total: newIds.length,
+      results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
+      failed: 0, failedIds: [] as number[], status: 'running' as const,
+    };
+    batchTasks.set(taskId, task);
+
+    // 异步执行
+    runBatchTask(taskId, task).catch(e => {
+      songloft.log.error(`[batch] 增量任务异常: ${e.message || e}`);
+      task.status = 'done';
+    });
+
+    // 记录扫描时间
+    await songloft.storage.set('last_scan_time', Date.now());
+
+    return jsonResponse({ taskId, total: newIds.length, message: `增量扫描: ${newIds.length} 首新歌曲` });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
 });
 
 // 单曲刮削
@@ -842,6 +877,11 @@ async function onInit(): Promise<void> {
 }
 
 async function onDeinit(): Promise<void> {
+  // 清理批量任务定时器
+  for (const [taskId, task] of batchTasks) {
+    if (task.timer) clearInterval(task.timer);
+  }
+  batchTasks.clear();
   songloft.log.info('[tag] 标签刮削插件已卸载');
 }
 

@@ -241,7 +241,9 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     if (cfg.enable_kugou && cfg.kugou_api_url) {
       tasks.push(searchWithCircuit(searchKuGou, cfg.kugou_api_url, 'kugou'));
     }
-    tasks.push(searchWithCircuit(searchMiGu, '', 'migu'));
+    if (cfg.enable_migu) {
+      tasks.push(searchWithCircuit(searchMiGu, '', 'migu'));
+    }
     if (cfg.enable_kuwo) {
       tasks.push(searchWithCircuit(searchKuWo, '', 'kuwo'));
     }
@@ -360,10 +362,6 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
     songloft.log.error(`[scraper] 写入异常: ${e.message || e}`);
     return 'failed';
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**

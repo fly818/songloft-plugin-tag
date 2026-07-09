@@ -111,6 +111,7 @@ export interface ScraperConfig {
   kugou_api_url: string;          // 示例: https://songsearch.kugou.com/song_search_v2
   enable_kuwo: boolean;
   kuwo_api_url: string;           // 示例: https://kuwo.cn
+  enable_migu: boolean;
   /** 评分阈值，低于此分数视为匹配失败（默认 0.7） */
   score_threshold: number;
 }
@@ -126,6 +127,7 @@ export const DEFAULT_CONFIG: ScraperConfig = {
   kugou_api_url: '',
   enable_kuwo: false,
   kuwo_api_url: '',
+  enable_migu: false,
   score_threshold: 0.7,
 };
 
@@ -538,11 +540,34 @@ export async function searchKuWo(keyword: string): Promise<SearchResult[]> {
 // 歌词下载
 // ============================================================
 
-/** 网易云歌词 */
+/** 双语 LRC 合并：按时间戳对齐原文和翻译 */
+function mergeBilingualLrc(original: string, translated: string): string {
+  const origMap = new Map<string, string>();
+  const origLines: string[] = [];
+  for (const line of original.split('\n')) {
+    const m = line.match(/^(\[\d+:\d+\.\d+\])(.*)$/);
+    if (m) { origMap.set(m[1], m[2]); origLines.push(m[1]); }
+  }
+  const tlMap = new Map<string, string>();
+  for (const line of translated.split('\n')) {
+    const m = line.match(/^(\[\d+:\d+\.\d+\])(.*)$/);
+    if (m && m[2].trim()) tlMap.set(m[1], m[2]);
+  }
+  // 合并：原文行后紧跟翻译行（如有）
+  const merged: string[] = [];
+  for (const ts of origLines) {
+    merged.push(ts + (origMap.get(ts) || ''));
+    const tl = tlMap.get(ts);
+    if (tl) merged.push(ts + tl);
+  }
+  return merged.join('\n');
+}
+
+/** 网易云歌词（支持双语合并） */
 async function fetchLyricsNetease(songId: string): Promise<string> {
   try {
     const resp = await fetch(
-      `https://music.163.com/api/song/lyric?id=${songId}&lv=1`,
+      `https://music.163.com/api/song/lyric?id=${songId}&lv=1&tv=1`,
       {
         headers: {
           'Referer': 'https://music.163.com',
@@ -552,7 +577,12 @@ async function fetchLyricsNetease(songId: string): Promise<string> {
     );
     if (!resp.ok) return '';
     const data = await resp.json();
-    return data?.lrc?.lyric || data?.tlyric?.lyric || '';
+    const lrc = data?.lrc?.lyric || '';
+    const tlrc = data?.tlyric?.lyric || '';
+    if (!lrc) return tlrc;
+    if (!tlrc) return lrc;
+    // 双语合并：按时间戳对齐原文和翻译
+    return mergeBilingualLrc(lrc, tlrc);
   } catch {
     return '';
   }
@@ -673,15 +703,17 @@ export async function enrichFromChineseSources(
     enrichTasks.push(searchWithScoring(searchKuGou, cfg.kugou_api_url, 'kugou'));
   }
   // 咪咕（需签名）和酷我（无需配置项），按开关启用
-  enrichTasks.push((async () => {
-    try {
-      await rateLimitWait('migu');
-      const results = await searchMiGu(keyword);
-      for (const r of results) { r.score = scoreMatch(candidate, r); }
-      if (results.length > 0) songloft.log.info(`[enrich] migu 返回 ${results.length} 条`);
-      allResults.push(...results);
-    } catch (e: any) { songloft.log.warn(`[enrich] migu 搜索异常: ${e.message || e}`); }
-  })());
+  if (cfg.enable_migu) {
+    enrichTasks.push((async () => {
+      try {
+        await rateLimitWait('migu');
+        const results = await searchMiGu(keyword);
+        for (const r of results) { r.score = scoreMatch(candidate, r); }
+        if (results.length > 0) songloft.log.info(`[enrich] migu 返回 ${results.length} 条`);
+        allResults.push(...results);
+      } catch (e: any) { songloft.log.warn(`[enrich] migu 搜索异常: ${e.message || e}`); }
+    })());
+  }
   if (cfg.enable_kuwo) {
     enrichTasks.push((async () => {
       try {
@@ -756,10 +788,6 @@ export async function enrichFromChineseSources(
     lyrics,
     source: best.source,
   };
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ---- 辅助：从文件名提取候选标签 ----
