@@ -50,6 +50,18 @@ export async function cacheSet(artist: string, title: string, data: any): Promis
     const key = CACHE_KEY_PREFIX + hashKey(artist.toLowerCase() + '|' + title.toLowerCase());
     const entry: CacheEntry = { data, ts: Date.now() };
     await songloft.storage.set(key, JSON.stringify(entry));
+    // 注册到键列表，供 cleanup 使用
+    try {
+      const raw = await songloft.storage.get('cache_keys');
+      let keys: string[] = [];
+      if (Array.isArray(raw)) keys = raw;
+      else if (typeof raw === 'string') { try { keys = JSON.parse(raw); } catch { /* ignore */ } }
+      else if (raw && typeof raw === 'object') keys = Object.values(raw) as string[];
+      if (!keys.includes(key)) {
+        keys.push(key);
+        await songloft.storage.set('cache_keys', JSON.stringify(keys));
+      }
+    } catch { /* ignore */ }
   } catch { /* ignore */ }
 }
 

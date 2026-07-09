@@ -1,8 +1,10 @@
 /// <reference types="@songloft/plugin-sdk" />
 import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
 import { toSimplified } from './t2s';
-import { scrapeSong, scrapeBatch, previewScrape, doScrape, writeTags, clearCover, type ScrapeResult } from './scraper';
-import { loadConfig, saveConfig, DEFAULT_CONFIG, type ScraperConfig } from './sources';
+import { scrapeSong, scrapeBatch, doScrape, writeTags, clearCover, type ScrapeResult } from './scraper';
+import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig } from './sources';
+import { scoreMatch } from './scoring';
+import { rateLimitWait } from './ratelimit';
 
 const router = createRouter();
 
@@ -58,7 +60,7 @@ async function reportStats(): Promise<void> {
     const LAST_VER = 'plugin_stats_last_ver';
     let deviceId = await songloft.storage.get(DEV_ID);
     const lastVer = await songloft.storage.get(LAST_VER);
-    const currentVer = '1.1.6';
+    const currentVer = '2.0.0';
     const isNew = !deviceId;
     const isUpgrade = lastVer && lastVer !== currentVer;
     if (!isNew && !isUpgrade) return;
@@ -339,18 +341,6 @@ router.post('/scrape/:id', async (req, params) => {
   return jsonResponse(result);
 });
 
-// 预览刮削（不写入）
-router.post('/scrape/preview/:id', async (req, params) => {
-  const songId = parseInt(params?.id || '0', 10);
-  if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
-
-  const result = await previewScrape(songId);
-  if (!result) {
-    return jsonResponse({ error: '无匹配结果', songId }, 404);
-  }
-  return jsonResponse(result);
-});
-
 // 清除歌曲中已嵌入的封面（解决老版本损坏封面无法覆盖的问题）
 router.post('/cover/clear/:id', async (req, params) => {
   const songId = parseInt(params?.id || '0', 10);
@@ -488,6 +478,153 @@ router.get('/songs', async (req) => {
     return jsonResponse({ songs: items, total: items.length });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e), songs: [] }, 500);
+  }
+});
+
+// ============================================================
+// 封面画廊：搜索各源封面
+// ============================================================
+router.get('/covers/:id', async (_req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID', covers: [] }, 400);
+
+  try {
+    const song = await songloft.songs.getById(songId);
+    if (!song) return jsonResponse({ error: '歌曲不存在', covers: [] }, 404);
+
+    const cfg = await loadConfig();
+    const keyword = `${song.artist || ''} ${song.title || ''}`.trim();
+    if (!keyword) return jsonResponse({ covers: [] });
+
+    const candidate = { artist: toSimplified(song.artist || ''), title: toSimplified(song.title || '') };
+
+    const tasks: Promise<{ covers: { url: string; source: string }[]; source: string }>[] = [];
+
+    if (cfg.enable_netease && cfg.netease_api_url) {
+      tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({
+        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '网易云' })),
+        source: 'netease'
+      })));
+    }
+    if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
+      tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({
+        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: 'QQ音乐' })),
+        source: 'qqmusic'
+      })));
+    }
+    if (cfg.enable_kugou && cfg.kugou_api_url) {
+      tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({
+        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '酷狗' })),
+        source: 'kugou'
+      })));
+    }
+    tasks.push(searchMiGu(keyword).then(r => ({
+      covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '咪咕' })),
+      source: 'migu'
+    })));
+    if (cfg.enable_kuwo) {
+      tasks.push(searchKuWo(keyword).then(r => ({
+        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '酷我' })),
+        source: 'kuwo'
+      })));
+    }
+
+    const settled = await Promise.allSettled(tasks);
+    const allCovers: { url: string; source: string; score: number }[] = [];
+
+    for (const s of settled) {
+      if (s.status === 'fulfilled') {
+        for (const c of s.value.covers) {
+          // URL 处理：相对路径补全，外部 URL 保持原样
+          let url = c.url;
+          if (url.startsWith('/')) {
+            const hostUrl = await songloft.plugin.getHostUrl();
+            url = hostUrl + url;
+            const token = await songloft.plugin.getToken();
+            url += (url.includes('?') ? '&' : '?') + 'access_token=' + token;
+          }
+          const score = scoreMatch(candidate, { artist: song.artist || '', title: song.title || '', source: s.value.source });
+          allCovers.push({ url, source: c.source, score });
+        }
+      }
+    }
+
+    allCovers.sort((a, b) => b.score - a.score);
+    const unique: { url: string; source: string }[] = [];
+    const seen = new Set<string>();
+    for (const c of allCovers) {
+      if (!seen.has(c.url)) {
+        seen.add(c.url);
+        // 过滤低分辨率封面（URL 中含小尺寸标识）
+        const isLowRes = /\/100x100|\/120x120|\/150x150|\/50x50|_small|_thumb|_100\.|_120\.|_150\./i.test(c.url);
+        if (!isLowRes) {
+          unique.push({ url: c.url, source: c.source });
+        }
+      }
+    }
+
+    return jsonResponse({ covers: unique.slice(0, 12) });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e), covers: [] }, 500);
+  }
+});
+
+// ============================================================
+// 预览刮削（返回真实搜索结果供 Diff 面板使用）
+// ============================================================
+router.get('/scrape/preview/:id', async (_req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID', results: [] }, 400);
+
+  try {
+    const song = await songloft.songs.getById(songId);
+    if (!song) return jsonResponse({ error: '歌曲不存在', results: [] }, 404);
+
+    const cfg = await loadConfig();
+    const keyword = `${song.artist || ''} ${song.title || ''}`.trim();
+    if (!keyword) return jsonResponse({ results: [] });
+
+    const candidate = { artist: toSimplified(song.artist || ''), title: toSimplified(song.title || ''), duration: song.duration };
+    const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
+
+    if (cfg.enable_netease && cfg.netease_api_url) {
+      tasks.push(rateLimitWait('netease').then(() => searchNetease(keyword, cfg.netease_api_url)).then(r => ({ results: r, source: '网易云' })));
+    }
+    if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
+      tasks.push(rateLimitWait('qqmusic').then(() => searchQQMusic(keyword, cfg.qqmusic_api_url)).then(r => ({ results: r, source: 'QQ音乐' })));
+    }
+    if (cfg.enable_kugou && cfg.kugou_api_url) {
+      tasks.push(rateLimitWait('kugou').then(() => searchKuGou(keyword, cfg.kugou_api_url)).then(r => ({ results: r, source: '酷狗' })));
+    }
+    tasks.push(rateLimitWait('migu').then(() => searchMiGu(keyword)).then(r => ({ results: r, source: '咪咕' })));
+    if (cfg.enable_kuwo) {
+      tasks.push(rateLimitWait('kuwo').then(() => searchKuWo(keyword)).then(r => ({ results: r, source: '酷我' })));
+    }
+
+    const settled = await Promise.allSettled(tasks);
+    const allResults: { artist: string; title: string; album: string; cover_url?: string; lyrics?: string; source: string; score: number }[] = [];
+
+    for (const s of settled) {
+      if (s.status === 'fulfilled') {
+        for (const r of s.value.results) {
+          const sc = scoreMatch(candidate, { artist: r.artist, title: r.title, source: s.value.source, duration: r.duration });
+          allResults.push({
+            artist: r.artist || '',
+            title: r.title || '',
+            album: r.album || '',
+            cover_url: r.cover_url,
+            lyrics: r.lyrics,
+            source: s.value.source,
+            score: sc,
+          });
+        }
+      }
+    }
+
+    allResults.sort((a, b) => b.score - a.score);
+    return jsonResponse({ results: allResults.slice(0, 10) });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e), results: [] }, 500);
   }
 });
 

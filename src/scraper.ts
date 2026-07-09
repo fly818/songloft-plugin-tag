@@ -183,7 +183,14 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
             best.lyrics = enrich.lyrics;
           }
 
-          return buildResult(songId, best, c, {});
+          const result = buildResult(songId, best, c, {});
+          // 写入缓存
+          await cacheSet(candidate.artist, candidate.title, {
+            artist: result.artist, title: result.title, album: result.album,
+            cover_url: result.cover_url, lyrics: result.lyrics,
+            source: result.source, score: result.score,
+          });
+          return result;
         }
       }
     }

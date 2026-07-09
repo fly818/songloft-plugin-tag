@@ -1,4 +1,5 @@
 /// <reference types="@songloft/plugin-sdk" />
+import { rateLimitWait } from './ratelimit';
 
 // ============================================================
 // 刮削源客户端
@@ -626,6 +627,7 @@ export async function enrichFromChineseSources(
   const searchWithScoring = async (fn: (kw: string, url: string) => Promise<SearchResult[]>, url: string, sourceName: string) => {
     if (!url) return;
     try {
+      await rateLimitWait(sourceName);
       const results = await fn(keyword, url);
       for (const r of results) {
         r.score = scoreMatch(candidate, r);
@@ -652,6 +654,7 @@ export async function enrichFromChineseSources(
   // 咪咕（需签名）和酷我（无需配置项），按开关启用
   enrichTasks.push((async () => {
     try {
+      await rateLimitWait('migu');
       const results = await searchMiGu(keyword);
       for (const r of results) { r.score = scoreMatch(candidate, r); }
       if (results.length > 0) songloft.log.info(`[enrich] migu 返回 ${results.length} 条`);
@@ -661,6 +664,7 @@ export async function enrichFromChineseSources(
   if (cfg.enable_kuwo) {
     enrichTasks.push((async () => {
       try {
+        await rateLimitWait('kuwo');
         const results = await searchKuWo(keyword);
         for (const r of results) { r.score = scoreMatch(candidate, r); }
         if (results.length > 0) songloft.log.info(`[enrich] kuwo 返回 ${results.length} 条`);
