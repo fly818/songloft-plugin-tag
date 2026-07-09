@@ -136,6 +136,18 @@
 | `/circuit-breaker/status` | GET | 熔断器状态 |
 | `/circuit-breaker/reset` | POST | 重置熔断器 |
 
+## 支持的音乐格式
+
+| 格式 | 声纹识别 | 标签写入 |
+|---|---|---|
+| FLAC | ✅ | ✅ |
+| MP3 | ✅ | ✅ |
+| MP4 / M4A | ✅ | ❌ |
+| OGG | ✅ | ❌ |
+| WAV | ✅ | ✅ |
+| APE | ✅ | ✅ |
+| WMA | ❌ | ❌ |
+
 ## 技术细节
 
 - **评分算法**：Ratcliff/Obershelp 文本相似度 + 时长惩罚
