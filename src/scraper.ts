@@ -22,6 +22,7 @@ import { scoreMatch } from './scoring';
 import { toSimplified } from './t2s';
 import { cacheGet, cacheSet, cacheCleanup } from './cache';
 import { rateLimitWait } from './ratelimit';
+import { circuitFailure, circuitSuccess, circuitIsOpen } from './circuit';
 
 export interface ScrapeResult {
   songId: number;
@@ -212,18 +213,34 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
 
     const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
 
+    const searchWithCircuit = async (fn: (kw: string, url: string) => Promise<SearchResult[]>, url: string, source: string) => {
+      if (circuitIsOpen(source)) {
+        songloft.log.info(`[scraper] ${source} 熔断中，跳过`);
+        return { results: [], source };
+      }
+      try {
+        await rateLimitWait(source);
+        const r = await fn(keyword, url);
+        circuitSuccess(source);
+        return { results: r, source };
+      } catch (e) {
+        circuitFailure(source);
+        throw e;
+      }
+    };
+
     if (cfg.enable_netease && cfg.netease_api_url) {
-      tasks.push(rateLimitWait('netease').then(() => searchNetease(keyword, cfg.netease_api_url)).then(r => ({ results: r, source: 'netease' as const })));
+      tasks.push(searchWithCircuit(searchNetease, cfg.netease_api_url, 'netease'));
     }
     if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-      tasks.push(rateLimitWait('qqmusic').then(() => searchQQMusic(keyword, cfg.qqmusic_api_url)).then(r => ({ results: r, source: 'qqmusic' as const })));
+      tasks.push(searchWithCircuit(searchQQMusic, cfg.qqmusic_api_url, 'qqmusic'));
     }
     if (cfg.enable_kugou && cfg.kugou_api_url) {
-      tasks.push(rateLimitWait('kugou').then(() => searchKuGou(keyword, cfg.kugou_api_url)).then(r => ({ results: r, source: 'kugou' as const })));
+      tasks.push(searchWithCircuit(searchKuGou, cfg.kugou_api_url, 'kugou'));
     }
-    tasks.push(rateLimitWait('migu').then(() => searchMiGu(keyword)).then(r => ({ results: r, source: 'migu' as const })));
+    tasks.push(searchWithCircuit(searchMiGu, '', 'migu'));
     if (cfg.enable_kuwo) {
-      tasks.push(rateLimitWait('kuwo').then(() => searchKuWo(keyword)).then(r => ({ results: r, source: 'kuwo' as const })));
+      tasks.push(searchWithCircuit(searchKuWo, '', 'kuwo'));
     }
 
     const settled = await Promise.allSettled(tasks);

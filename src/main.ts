@@ -5,6 +5,7 @@ import { scrapeSong, scrapeBatch, doScrape, writeTags, clearCover, type ScrapeRe
 import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig } from './sources';
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
+import { circuitStatus, circuitReset } from './circuit';
 
 const router = createRouter();
 
@@ -60,7 +61,7 @@ async function reportStats(): Promise<void> {
     const LAST_VER = 'plugin_stats_last_ver';
     let deviceId = await songloft.storage.get(DEV_ID);
     const lastVer = await songloft.storage.get(LAST_VER);
-    const currentVer = '2.0.0';
+    const currentVer = '2.0.1';
     const isNew = !deviceId;
     const isUpgrade = lastVer && lastVer !== currentVer;
     if (!isNew && !isUpgrade) return;
@@ -225,6 +226,20 @@ router.get('/config/status', async (_req) => {
 
   await Promise.all(probes);
   return jsonResponse(result);
+});
+
+// ============================================================
+// 熔断器状态
+// ============================================================
+router.get('/circuit-breaker/status', async (_req) => {
+  return jsonResponse(circuitStatus());
+});
+
+router.post('/circuit-breaker/reset', async (req) => {
+  const body = parseBody(req);
+  const source = body?.source;
+  circuitReset(source);
+  return jsonResponse({ ok: true, source: source || 'all' });
 });
 
 // ============================================================
