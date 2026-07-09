@@ -397,7 +397,7 @@ export async function searchQQMusic(keyword: string, apiUrl: string): Promise<Se
       sourceId: s.songmid || undefined,
       release_date: undefined,
       genre: '',
-      year: s.interval ? '' : '',
+      year: '',
       track: s.index ? String(s.index) : '',
       score: 0,
       source: 'qqmusic',

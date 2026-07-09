@@ -61,7 +61,7 @@ async function reportStats(): Promise<void> {
     const LAST_VER = 'plugin_stats_last_ver';
     let deviceId = await songloft.storage.get(DEV_ID);
     const lastVer = await songloft.storage.get(LAST_VER);
-    const currentVer = '2.0.1';
+    const currentVer = '2.1.1';
     const isNew = !deviceId;
     const isUpgrade = lastVer && lastVer !== currentVer;
     if (!isNew && !isUpgrade) return;
@@ -129,6 +129,9 @@ router.put('/config', async (req) => {
     }
     if (merged.kugou_api_url && isBadHost(merged.kugou_api_url)) {
       return jsonResponse({ error: 'URL 不允许：kugou_api_url 指向内网地址' }, 400);
+    }
+    if (merged.kuwo_api_url && isBadHost(merged.kuwo_api_url)) {
+      return jsonResponse({ error: 'URL 不允许：kuwo_api_url 指向内网地址' }, 400);
     }
 
     // 清理可能被污染的存储（防止 {status, config} 响应体被写入 config）
@@ -332,6 +335,7 @@ router.get('/test/t2s', async (_req) => {
 async function runBatchTask(taskId: string, task: any): Promise<void> {
   const cfg = await loadConfig();
   for (const songId of task.ids) {
+    if (task.cancelled) { songloft.log.info(`[batch] 任务 ${taskId} 已取消`); break; }
     try {
       const result = await doScrape(songId, cfg);
       if (!result) {
@@ -381,6 +385,7 @@ router.post('/scrape/batch', async (req) => {
     ids: newIds, current: 0, total: newIds.length,
     results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
     failed: 0, failedIds: [] as number[], status: 'running' as const,
+    cancelled: false,
   };
   batchTasks.set(taskId, task);
 
@@ -388,6 +393,17 @@ router.post('/scrape/batch', async (req) => {
   setTimeout(() => runBatchTask(taskId, task), 100);
 
   return jsonResponse({ taskId, status: 'started', total: newIds.length, skipped: skipIds.length });
+});
+
+// 批量取消
+router.post('/scrape/batch/cancel', async (req) => {
+  const body = parseBody(req);
+  const taskId = body.taskId;
+  if (!taskId) return jsonResponse({ error: '缺少 taskId' }, 400);
+  const task = batchTasks.get(taskId);
+  if (!task) return jsonResponse({ error: '任务不存在' }, 404);
+  task.cancelled = true;
+  return jsonResponse({ ok: true, message: '任务已标记取消' });
 });
 
 // 批量进度查询
@@ -771,7 +787,8 @@ router.get('/storage/failed', async (_req) => {
 
 router.post('/storage/failed', async (req) => {
   try {
-    await songloft.storage.set('failed_songs', req.body || '[]');
+    const data = parseBody(req);
+    await songloft.storage.set('failed_songs', JSON.stringify(data));
     return jsonResponse({ ok: true });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 500);
@@ -877,9 +894,9 @@ async function onInit(): Promise<void> {
 }
 
 async function onDeinit(): Promise<void> {
-  // 清理批量任务定时器
+  // 标记所有批量任务为已取消
   for (const [taskId, task] of batchTasks) {
-    if (task.timer) clearInterval(task.timer);
+    task.cancelled = true;
   }
   batchTasks.clear();
   songloft.log.info('[tag] 标签刮削插件已卸载');

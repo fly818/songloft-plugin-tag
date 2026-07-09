@@ -176,11 +176,4 @@ export function scoreMatch(
   return score;
 }
 
-/**
- * 判定分数是否达标
- */
-export const SCORE_THRESHOLD = 0.7;
 
-export function isScoreAcceptable(score: number): boolean {
-  return score >= SCORE_THRESHOLD;
-}

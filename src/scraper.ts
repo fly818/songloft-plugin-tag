@@ -401,6 +401,9 @@ export async function clearCover(songId: number): Promise<string> {
       title: song.title || '',
       artist: song.artist || '',
       album: song.album || '',
+      genre: (song as any).genre || '',
+      year: (song as any).year || '',
+      track: (song as any).track_number || '',
       lyrics: lyrics,
       clear_cover: true,
     };
