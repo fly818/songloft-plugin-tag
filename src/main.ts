@@ -243,6 +243,80 @@ router.post('/circuit-breaker/reset', async (req) => {
 });
 
 // ============================================================
+// 目录整理
+// ============================================================
+router.post('/organize/preview', async (req) => {
+  try {
+    const body = parseBody(req);
+    const items = body?.items || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return jsonResponse({ error: '请提供歌曲列表', changes: [] }, 400);
+    }
+
+    // 调用主程序 Bridge API
+    const token = await songloft.plugin.getToken();
+    const hostUrl = await songloft.plugin.getHostUrl();
+    const resp = await fetch(`${hostUrl}/api/v1/jsplugin/tag`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: 'songs.organizePreview',
+        data: { items },
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return jsonResponse({ error: errText, changes: [] }, resp.status);
+    }
+
+    const result = await resp.json();
+    return jsonResponse({ changes: result || [] });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e), changes: [] }, 500);
+  }
+});
+
+router.post('/organize/execute', async (req) => {
+  try {
+    const body = parseBody(req);
+    const items = body?.items || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return jsonResponse({ error: '请提供歌曲列表', results: [] }, 400);
+    }
+
+    const token = await songloft.plugin.getToken();
+    const hostUrl = await songloft.plugin.getHostUrl();
+    const resp = await fetch(`${hostUrl}/api/v1/jsplugin/tag`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: 'songs.organize',
+        data: { items },
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return jsonResponse({ error: errText, results: [] }, resp.status);
+    }
+
+    const result = await resp.json();
+    const success = (result || []).filter((r: any) => r.status === 'ok').length;
+    const failed = (result || []).filter((r: any) => r.status !== 'ok').length;
+    return jsonResponse({ success, failed, results: result || [] });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e), results: [] }, 500);
+  }
+});
+
+// ============================================================
 // 调试：t2s 繁简转换测试
 // ============================================================
 router.get('/test/t2s', async (_req) => {

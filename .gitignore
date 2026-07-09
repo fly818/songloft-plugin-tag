@@ -13,3 +13,5 @@ tmp_*
 .codegraph/
 .cache/
 .reasonix/
+.mimocode/
+.github/
