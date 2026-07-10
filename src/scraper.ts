@@ -153,6 +153,15 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   const cached = await cacheGet<SearchResult>(candidate.artist, candidate.title);
   if (cached && cached.score >= cfg.score_threshold) {
     songloft.log.info(`[scraper] 缓存命中: ${cached.artist} - ${cached.title} (${cached.score.toFixed(2)})`);
+    // 缓存可能缺少 genre/year/track，从 enrichment 补全
+    if (!cached.genre && !cached.year && !cached.track) {
+      const enrich = await enrichFromChineseSources(cached.artist, cached.title, candidate, cfg);
+      if (enrich.genre) cached.genre = enrich.genre;
+      if (enrich.year) cached.year = enrich.year;
+      if (enrich.track) cached.track = enrich.track;
+      if (enrich.cover_url && !cached.cover_url) cached.cover_url = enrich.cover_url;
+      if (enrich.lyrics && !cached.lyrics) cached.lyrics = enrich.lyrics;
+    }
     return buildResult(songId, cached, candidate, {});
   }
 

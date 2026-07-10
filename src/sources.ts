@@ -670,6 +670,7 @@ export async function enrichFromChineseSources(
   candidate: { artist: string; title: string },
   cfg: ScraperConfig
 ): Promise<EnrichResult> {
+  songloft.log.info(`[enrich] 开始 enrichment: ${artist} - ${title}`);
   const keyword = `${artist} ${title}`.trim();
   if (!keyword) return {};
 
@@ -746,7 +747,7 @@ export async function enrichFromChineseSources(
     return {};
   }
 
-  songloft.log.info(`[enrich] 选用 ${best.source} (${bestScore.toFixed(2)})`);
+  songloft.log.info(`[enrich] 选用 ${best.source} (${bestScore.toFixed(2)}) | genre=${best.genre||''} year=${best.year||''} track=${best.track||''}`);
 
   // 如果最佳结果没有封面，从其他结果中找有封面的
   let coverUrl = best.cover_url;
