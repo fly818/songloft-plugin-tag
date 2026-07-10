@@ -654,6 +654,9 @@ async function fetchLyricsForResult(r: SearchResult): Promise<string> {
 export interface EnrichResult {
   cover_url?: string;
   lyrics?: string;
+  genre?: string;
+  year?: string;
+  track?: string;
   source?: string;
 }
 
@@ -786,6 +789,9 @@ export async function enrichFromChineseSources(
   return {
     cover_url: coverUrl,
     lyrics,
+    genre: best.genre || '',
+    year: best.year || '',
+    track: best.track || '',
     source: best.source,
   };
 }

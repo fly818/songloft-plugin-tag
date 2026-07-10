@@ -186,6 +186,15 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
           if (enrich.lyrics) {
             best.lyrics = enrich.lyrics;
           }
+          if (enrich.genre) {
+            best.genre = enrich.genre;
+          }
+          if (enrich.year) {
+            best.year = enrich.year;
+          }
+          if (enrich.track) {
+            best.track = enrich.track;
+          }
 
           const result = buildResult(songId, best, c, {});
           // 写入缓存
