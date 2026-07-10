@@ -346,12 +346,15 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
         const ws = await writeTags(songId, result);
         result.fileWriteStatus = ws;
         task.results.push(result);
-        if (ws === 'written' || ws === 'unchanged' || ws === 'skipped') {
-          task.success++;
-          await markScrapedDone(songId);
-        } else {
+        if (ws === 'failed') {
+          // 写入报错（DB 已更新但文件写入失败）
           task.failed++;
           task.failedIds.push(songId);
+        } else {
+          // written/skipped/unchanged: DB 已更新成功
+          // file_write 只是附加信息，不影响成功判定
+          task.success++;
+          await markScrapedDone(songId);
         }
       }
     } catch {
