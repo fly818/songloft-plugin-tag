@@ -12,6 +12,7 @@
 - **批量任务可取消**：停止按钮同时取消后端任务，不再空跑
 - **clearCover 保留元数据**：清除封面时保留流派/年份/音轨号
 - **POST /storage/failed**：修复 body 未解析导致数据丢失
+- **标签写入修复**：year 字段类型从字符串改为整数，移除不支持的 track 字段
 
 ### 安全
 - **链接安全**：markdown 链接只允许 http/https 协议，阻止 javascript: 注入
