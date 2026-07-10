@@ -335,6 +335,7 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       album: result.album || '',
       genre: result.genre || '',
       year: isNaN(yearNum) ? 0 : yearNum,
+      track: result.track || '',
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
     };
