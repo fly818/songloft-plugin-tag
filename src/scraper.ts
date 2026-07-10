@@ -348,6 +348,7 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
     };
+    songloft.log.info(`[scraper] 写入标签: ${result.artist} - ${result.title} | genre=${body.genre} year=${body.year} track=${body.track} source=${result.source}`);
 
     const resp = await fetch(`${hostUrl}/api/v1/songs/${songId}/tags`, {
       method: 'PUT',
