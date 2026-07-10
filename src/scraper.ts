@@ -328,13 +328,13 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
     const hostUrl = await songloft.plugin.getHostUrl();
 
     // 封面直接传 URL 给后端下载（避免 QuickJS .text() 损坏二进制）
-    const body: Record<string, string> = {
+    const yearNum = result.year ? parseInt(result.year, 10) : 0;
+    const body: Record<string, string | number | boolean> = {
       title: result.title,
       artist: result.artist,
       album: result.album || '',
       genre: result.genre || '',
-      year: result.year || '',
-      track: result.track || '',
+      year: isNaN(yearNum) ? 0 : yearNum,
       lyrics: result.lyrics || '',
       cover_url: result.cover_url || '',
     };
