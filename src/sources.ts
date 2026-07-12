@@ -53,31 +53,6 @@ function isHostnameAllowed(url: string): boolean {
   return true;
 }
 
-// ---- 语言检测（Unicode 范围统计）----
-function detectLanguage(text: string): string {
-  if (!text) return "unknown";
-  let cjk = 0, lat = 0, kana = 0, hangul = 0, other = 0;
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x20000 && c <= 0x2A6DF)) cjk++;
-    else if ((c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF)) kana++;
-    else if (c >= 0xAC00 && c <= 0xD7AF) hangul++;
-    else if ((c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A) || (c >= 0xC0 && c <= 0x24F)) lat++;
-    else if (c > 0x7F) other++;
-  }
-  const total = cjk + kana + hangul + lat + other || 1;
-  if (cjk / total > 0.3) return kana / total > 0.1 ? "ja" : "zh";
-  if (kana / total > 0.3) return "ja";
-  if (hangul / total > 0.3) return "ko";
-  if (lat / total > 0.5) return "en";
-  return "unknown";
-}
-
-// ---- 模板变量系统（${...} 语法）----
-export function resolveTemplate(template: string, vars: Record<string, string>): string {
-  return template.replace(/\$\{([^}]+)\}/g, (_: string, key: string) => vars[key.trim()] || "");
-}
-
 // ----
 // ---- 指数退避重试（弱网减少失败率）----
 async function fetchWithRetry(
@@ -457,8 +432,6 @@ export async function searchKuGou(keyword: string, apiUrl: string): Promise<Sear
 
 
 // ---- 咪咕音乐（v1 API）----
-const MIGU_KEY = [0x4A, 0x6B, 0x38, 0x71, 0x7A, 0x75, 0x65, 0x50, 0x69, 0x4A, 0x31, 0x71, 0x45, 0x33, 0x6D, 0x44, 0x59, 0x68, 0x4C, 0x51, 0x33, 0x54, 0x37, 0x33, 0x44, 0x74, 0x44, 0x6F, 0x41, 0x68, 0x4C, 0x50];
-
 export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
   try {
     const searchSwitch = JSON.stringify({ song: 1, album: 0, singer: 0, tagSong: 1, mvSong: 0, bestShow: 1 });
@@ -541,17 +514,17 @@ export async function searchKuWo(keyword: string): Promise<SearchResult[]> {
 /** 常见歌词广告模式 */
 const AD_PATTERNS = [
   // 下载链接
-  /https?:\/\/[^\s]+/gi,
+  /https?:\/\/[^\s]+/i,
   // QQ群/微信群
-  /(?:QQ群|qq群|微信群|wx群|加群|群号)[：:\s]*\d+/gi,
+  /(?:QQ群|qq群|微信群|wx群|加群|群号)[：:\s]*\d+/i,
   // 联系方式
-  /(?:微信|wx|QQ|qq)[：:\s]*\S+/gi,
+  /(?:微信|wx|QQ|qq)[：:\s]*\S+/i,
   // 版权声明（过长的）
-  /(?:版权所有|copyright|©|\(c\)).{20,}/gi,
+  /(?:版权所有|copyright|©|\(c\)).{20,}/i,
   // 网站推广
-  /(?:更多歌词|歌词下载|完整歌词|歌词来源|lyrics?\s*(?:from|by|source))[：:\s]*\S+/gi,
+  /(?:更多歌词|歌词下载|完整歌词|歌词来源|lyrics?\s*(?:from|by|source))[：:\s]*\S+/i,
   // 插件/APP推广
-  /(?:下载|安装|使用)\s*(?:本|此)?(?:插件|软件|APP|app|应用)/gi,
+  /(?:下载|安装|使用)\s*(?:本|此)?(?:插件|软件|APP|app|应用)/i,
 ];
 
 /** 自定义广告关键词（用户配置） */

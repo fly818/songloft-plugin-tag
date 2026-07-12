@@ -42,13 +42,6 @@ export interface ScrapeResult {
   sourceScores?: Record<string, number>;
 }
 
-export interface ScrapePreview {
-  songId: number;
-  results: ScrapeResult[];
-  /** 最佳结果 */
-  best?: ScrapeResult;
-}
-
 /**
  * 单曲刮削（写入模式）
  */
