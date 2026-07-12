@@ -376,7 +376,12 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
   await Promise.all(task.ids.map(async (songId: number) => {
     await sem.acquire();
     try {
-      if (task.cancelled) { songloft.log.info(`[batch] 任务 ${taskId} 已取消`); return; }
+      if (task.cancelled) {
+        songloft.log.info(`[batch] 任务 ${taskId} 已取消，跳过剩余歌曲`);
+        task.skipped++;
+        task.skippedIds.push(songId);
+        return;
+      }
       const result = await doScrape(songId, cfg);
       if (!result) {
         songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
