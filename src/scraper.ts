@@ -24,6 +24,25 @@ import { cacheGet, cacheSet, cacheCleanup } from './cache';
 import { rateLimitWait } from './ratelimit';
 import { circuitFailure, circuitSuccess, circuitIsOpen } from './circuit';
 
+// ============================================================
+// 并发控制：简单信号量
+// ============================================================
+
+function createSemaphore(max: number) {
+  let current = 0;
+  const queue: (() => void)[] = [];
+  return {
+    async acquire() {
+      if (current < max) { current++; return; }
+      await new Promise<void>(r => queue.push(r));
+    },
+    release() {
+      current--;
+      if (queue.length > 0) queue.shift()!();
+    },
+  };
+}
+
 export interface ScrapeResult {
   songId: number;
   artist: string;
@@ -72,7 +91,7 @@ export async function previewScrape(songId: number, config?: ScraperConfig): Pro
 }
 
 /**
- * 批量刮削
+ * 批量刮削（支持并发控制）
  */
 export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Promise<{
   results: ScrapeResult[];
@@ -89,26 +108,35 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
   const skippedIds: number[] = [];
   let failed = 0;
   const failedIds: number[] = [];
+  const sem = createSemaphore(cfg.max_concurrency || 2);
 
-  for (const songId of songIds) {
-    const result = await doScrape(songId, cfg);
-    if (!result) {
-      skipped++;
-      skippedIds.push(songId);
-      continue;
-    }
+  await Promise.all(songIds.map(async (songId) => {
+    await sem.acquire();
+    try {
+      const result = await doScrape(songId, cfg);
+      if (!result) {
+        skipped++;
+        skippedIds.push(songId);
+        return;
+      }
 
-    const writeResult = await writeTags(songId, result);
-    result.fileWriteStatus = writeResult;
-    results.push(result);
+      const writeResult = await writeTags(songId, result);
+      result.fileWriteStatus = writeResult;
+      results.push(result);
 
-    if (writeResult === 'written' || writeResult === 'unchanged' || writeResult === 'skipped') {
-      success++;
-    } else {
+      if (writeResult === 'ok') {
+        success++;
+      } else {
+        failed++;
+        failedIds.push(songId);
+      }
+    } catch {
       failed++;
       failedIds.push(songId);
+    } finally {
+      sem.release();
     }
-  }
+  }));
 
   // 批量刮削完成后清理过期缓存
   cacheCleanup().catch(() => {});
@@ -155,7 +183,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     songloft.log.info(`[scraper] 缓存命中: ${cached.artist} - ${cached.title} (${cached.score.toFixed(2)})`);
     // 缓存可能缺少 genre/year/track，从 enrichment 补全
     if (!cached.genre && !cached.year && !cached.track) {
-      const enrich = await enrichFromChineseSources(cached.artist, cached.title, candidate, cfg);
+      const enrich = await enrichFromChineseSources(cached.artist, cached.title, candidate, cfg, filePath);
       if (enrich.genre) cached.genre = enrich.genre;
       if (enrich.year) cached.year = enrich.year;
       if (enrich.track) cached.track = enrich.track;
@@ -187,7 +215,7 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
           best.title = toSimplified(best.title);
           best.album = toSimplified(best.album);
 
-          const enrich = await enrichFromChineseSources(best.artist, best.title, c, cfg);
+          const enrich = await enrichFromChineseSources(best.artist, best.title, c, cfg, filePath);
           if (enrich.cover_url) {
             best.cover_url = enrich.cover_url;
             songloft.log.info(`[scraper] 封面来自 ${enrich.source}: ${enrich.cover_url.substring(0, 60)}...`);
@@ -377,7 +405,8 @@ export async function writeTags(songId: number, result: ScrapeResult): Promise<s
     const data = await resp.json();
     const fileWrite = data.file_write || 'unknown';
     songloft.log.info(`[scraper] 标签写入完成: ${result.artist} - ${result.title} (file=${fileWrite})`);
-    return fileWrite;
+    // HTTP 200 = DB 已更新，file_write 仅作日志参考
+    return 'ok';
   } catch (e: any) {
     songloft.log.error(`[scraper] 写入异常: ${e.message || e}`);
     return 'failed';

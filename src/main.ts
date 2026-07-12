@@ -61,7 +61,7 @@ async function reportStats(): Promise<void> {
     const LAST_VER = 'plugin_stats_last_ver';
     let deviceId = await songloft.storage.get(DEV_ID);
     const lastVer = await songloft.storage.get(LAST_VER);
-    const currentVer = '2.1.1';
+    const currentVer = '2.2.0';
     const isNew = !deviceId;
     const isUpgrade = lastVer && lastVer !== currentVer;
     if (!isNew && !isUpgrade) return;
@@ -120,6 +120,14 @@ router.put('/config', async (req) => {
     merged.enable_kugou    = !!(merged.kugou_api_url);
     merged.enable_kuwo     = !!(merged.kuwo_api_url);
 
+    // 验证并发数和扫描间隔
+    if (typeof merged.max_concurrency === 'number') {
+      merged.max_concurrency = Math.max(1, Math.min(16, Math.round(merged.max_concurrency)));
+    }
+    if (typeof merged.auto_scan_interval === 'number') {
+      merged.auto_scan_interval = Math.max(5, Math.min(1440, Math.round(merged.auto_scan_interval)));
+    }
+
     if (merged.netease_api_url && isBadHost(merged.netease_api_url)) {
       songloft.log.warn('[ssrf] 拦截内网 URL: ' + merged.netease_api_url);
       return jsonResponse({ error: 'URL 不允许：netease_api_url 指向内网地址' }, 400);
@@ -139,6 +147,15 @@ router.put('/config', async (req) => {
     delete merged['config'];
 
     await saveConfig(merged);
+
+    // 如果自动监测配置变更，重启定时器
+    if (updates.enable_auto_scan !== undefined || updates.auto_scan_interval !== undefined) {
+      stopAutoScan();
+      if (merged.enable_auto_scan) {
+        startAutoScan();
+      }
+    }
+
     return jsonResponse({ status: 'ok', config: merged });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 400);
@@ -221,6 +238,21 @@ router.get('/config/status', async (_req) => {
         const data = await resp.json();
         result['kuwo'] = data?.abslist !== undefined;
       } catch { result['kuwo'] = false; }
+    })());
+  }
+
+  // 咪咕（公开 API，无需 URL）
+  if (cfg.enable_migu) {
+    probes.push((async () => {
+      try {
+        const resp = await fetch(
+          `https://c.musicapp.migu.cn/v1.0/content/search_all.do?text=test&pageNo=1&pageSize=1&isCopyright=1&sort=1&searchSwitch=%7B%22song%22%3A1%7D`,
+          { headers: { 'ua': 'Android_migu', 'version': '7.0.0', 'channel': '014021I', 'User-Agent': 'MIGU/7.0.0 (Android 12)', 'Referer': 'https://music.migu.cn/' } }
+        );
+        if (!resp.ok) { result['migu'] = false; return; }
+        const data = await resp.json();
+        result['migu'] = data?.code === '000000';
+      } catch { result['migu'] = false; }
     })());
   }
 
@@ -331,12 +363,34 @@ router.get('/test/t2s', async (_req) => {
 // 刮削
 // ============================================================
 
-// 批量任务执行器
+// 并发控制信号量
+function createSemaphore(max: number) {
+  let current = 0;
+  const queue: (() => void)[] = [];
+  return {
+    async acquire() {
+      if (current < max) { current++; return; }
+      await new Promise<void>(r => queue.push(r));
+    },
+    release() {
+      current--;
+      if (queue.length > 0) queue.shift()!();
+    },
+  };
+}
+
+// 批量任务执行器（支持并发控制）
 async function runBatchTask(taskId: string, task: any): Promise<void> {
   const cfg = await loadConfig();
-  for (const songId of task.ids) {
-    if (task.cancelled) { songloft.log.info(`[batch] 任务 ${taskId} 已取消`); break; }
+  const sem = createSemaphore(cfg.max_concurrency || 2);
+  const total = task.ids.length;
+
+  // 并发执行，但保持进度追踪
+  let processed = 0;
+  await Promise.all(task.ids.map(async (songId: number) => {
+    await sem.acquire();
     try {
+      if (task.cancelled) { songloft.log.info(`[batch] 任务 ${taskId} 已取消`); return; }
       const result = await doScrape(songId, cfg);
       if (!result) {
         songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
@@ -347,12 +401,9 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
         result.fileWriteStatus = ws;
         task.results.push(result);
         if (ws === 'failed') {
-          // 写入报错（DB 已更新但文件写入失败）
           task.failed++;
           task.failedIds.push(songId);
         } else {
-          // written/skipped/unchanged: DB 已更新成功
-          // file_write 只是附加信息，不影响成功判定
           task.success++;
           await markScrapedDone(songId);
         }
@@ -360,9 +411,13 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
     } catch {
       task.failed++;
       task.failedIds.push(songId);
+    } finally {
+      processed++;
+      task.current = processed;
+      sem.release();
     }
-    task.current++;
-  }
+  }));
+
   task.status = 'done';
 }
 
@@ -876,6 +931,50 @@ router.post('/scrape/manual/:id', async (req, params) => {
 // ============================================================
 // 生命周期
 // ============================================================
+
+// 自动监测定时器
+let autoScanTimer: ReturnType<typeof setInterval> | null = null;
+
+async function startAutoScan(): Promise<void> {
+  if (autoScanTimer) return;
+  const cfg = await loadConfig();
+  if (!cfg.enable_auto_scan) return;
+
+  const intervalMs = (cfg.auto_scan_interval || 30) * 60 * 1000;
+  songloft.log.info(`[tag] 自动监测已启动，间隔 ${cfg.auto_scan_interval || 30} 分钟`);
+
+  autoScanTimer = setInterval(async () => {
+    try {
+      const songs = await songloft.songs.list({ limit: 10000 });
+      const doneIds = await getScrapedDone();
+      const newIds = songs.map(s => Number(s.id)).filter(id => !doneIds.has(id));
+      if (newIds.length === 0) return;
+
+      songloft.log.info(`[auto-scan] 发现 ${newIds.length} 首新歌曲，开始增量扫描`);
+      const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const task = {
+        ids: newIds, current: 0, total: newIds.length,
+        results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
+        failed: 0, failedIds: [] as number[], status: 'running' as const,
+        cancelled: false,
+      };
+      batchTasks.set(taskId, task);
+      await runBatchTask(taskId, task);
+      songloft.log.info(`[auto-scan] 完成: 成功${task.success} 跳过${task.skipped} 失败${task.failed}`);
+    } catch (e: any) {
+      songloft.log.error(`[auto-scan] 异常: ${e.message || e}`);
+    }
+  }, intervalMs);
+}
+
+function stopAutoScan(): void {
+  if (autoScanTimer) {
+    clearInterval(autoScanTimer);
+    autoScanTimer = null;
+    songloft.log.info('[tag] 自动监测已停止');
+  }
+}
+
 async function onInit(): Promise<void> {
   songloft.log.info('[tag] 标签刮削插件已启动');
   // 清理旧版残留（bin/ 下文件在 overlayfs 上会导致 AcoustID 失败）
@@ -892,11 +991,14 @@ async function onInit(): Promise<void> {
   if (!existing || Object.keys(existing).length === 0) {
     await saveConfig(DEFAULT_CONFIG);
   }
+  // 启动自动监测
+  startAutoScan();
   // 埋点统计（异步，不阻塞启动）
   reportStats();
 }
 
 async function onDeinit(): Promise<void> {
+  stopAutoScan();
   // 标记所有批量任务为已取消
   for (const [taskId, task] of batchTasks) {
     task.cancelled = true;

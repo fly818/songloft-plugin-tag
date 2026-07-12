@@ -97,6 +97,12 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
 .adv-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
 .adv-row label{font-size:10px;color:var(--tx-2)}
 .adv-row .val{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);min-width:30px;text-align:right}
+.adv-row input[type="text"],.adv-row input[type="number"]{padding:5px 8px;border-radius:3px;border:1px solid var(--brd-2);font-size:11px;font-family:'Montserrat';background:transparent;color:var(--tx);outline:none;font-weight:300}
+.adv-row input[type="text"]:focus,.adv-row input[type="number"]:focus{border-color:rgba(212,165,116,.4)}
+.toggle{width:32px;height:18px;background:var(--bg-2);border-radius:9px;position:relative;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle .knob{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.toggle.on .knob{left:16px}
 .slider{width:80px;height:3px;background:var(--bg-2);border-radius:2px;position:relative;cursor:pointer}
 .org-status{font-size:8px;padding:1px 5px;border-radius:2px;border:1px solid var(--brd);color:var(--tx-2);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
 .org-status.ok{color:var(--accent);border-color:rgba(212,165,116,.2)}
@@ -330,7 +336,7 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
 <body>
 <div class="hdr">
   <button class="hdr-btn" id="menuBtn" onclick="toggleSidebar()" style="display:none"><span class="mi" style="font-size:20px">menu</span></button>
-  <div class="logo"><span class="mi">music_note</span>标签刮削<span class="ver">v2.1.1</span></div>
+  <div class="logo"><span class="mi">music_note</span>标签刮削<span class="ver">v2.2.0</span></div>
   <div class="tabs" id="dTabs" role="tablist"><button class="on" data-tab="songs" onclick="switchTab('songs')" role="tab"><span class="mi" style="font-size:14px">music_note</span> 歌曲</button><button data-tab="failed" onclick="switchTab('failed')" role="tab"><span class="mi" style="font-size:14px">fact_check</span> 校对</button><button data-tab="organize" onclick="switchTab('organize')" role="tab"><span class="mi" style="font-size:14px">folder_open</span> 整理</button></div>
   <div class="spacer"></div>
   <button class="hdr-btn" onclick="location.reload(true)"><span class="mi" style="font-size:16px">refresh</span></button>
@@ -473,12 +479,13 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
       </div>
     </div>
     <div class="cfg-sec"><h4>刮削源</h4>
-      <div class="chips" id="srcChips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')" aria-pressed="true">AcoustID</div><div class="chip" onclick="showSrc('src-netease')" aria-pressed="false">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')" aria-pressed="false">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')" aria-pressed="false">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')" aria-pressed="false">酷我</div></div>
+      <div class="chips" id="srcChips" style="margin-bottom:10px"><div class="chip on" onclick="showSrc('src-acoustid')" aria-pressed="true">AcoustID</div><div class="chip" onclick="showSrc('src-netease')" aria-pressed="false">网易云</div><div class="chip" onclick="showSrc('src-qqmusic')" aria-pressed="false">QQ音乐</div><div class="chip" onclick="showSrc('src-kugou')" aria-pressed="false">酷狗</div><div class="chip" onclick="showSrc('src-kuwo')" aria-pressed="false">酷我</div><div class="chip" onclick="showSrc('src-migu')" aria-pressed="false">咪咕</div></div>
       <div id="src-acoustid" class="src-panel" style="display:block"><div class="cfg"><label>AcoustID Key</label><input id="cfg_ak" placeholder="输入你的 Key" aria-label="AcoustID Key"><span class="eg">获取地址：acoustid.org/webservice</span></div></div>
       <div id="src-netease" class="src-panel" style="display:none"><div class="cfg"><label>网易云 URL</label><input id="cfg_nu" placeholder="输入 API URL" aria-label="网易云 API URL"><span class="eg">示例：https://interface.music.163.com/eapi/api/cloudsearch/pc</span></div></div>
       <div id="src-qqmusic" class="src-panel" style="display:none"><div class="cfg"><label>QQ音乐 URL</label><input id="cfg_qu" placeholder="输入 API URL" aria-label="QQ音乐 API URL"><span class="eg">示例：https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp</span></div></div>
       <div id="src-kugou" class="src-panel" style="display:none"><div class="cfg"><label>酷狗 URL</label><input id="cfg_ku" placeholder="输入 API URL" aria-label="酷狗 API URL"><span class="eg">示例：https://songsearch.kugou.com/song_search_v2</span></div></div>
       <div id="src-kuwo" class="src-panel" style="display:none"><div class="cfg"><label>酷我 URL</label><input id="cfg_kw" placeholder="输入 API URL" aria-label="酷我 API URL"><span class="eg">示例：https://kuwo.cn</span></div></div>
+      <div id="src-migu" class="src-panel" style="display:none"><div class="cfg"><label>咪咕</label><span class="eg">咪咕音乐无需配置 API URL，直接使用公开接口</span><div style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="cfg_migu" style="width:16px;height:16px"> 启用咪咕音乐</label></div></div></div>
     </div>
     <button class="save-btn" onclick="saveCfg()">保存配置</button>
     <div class="adv-cfg">
@@ -486,6 +493,17 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
       <div class="adv-row"><label>评分阈值</label><div style="display:flex;align-items:center;gap:6px"><div class="slider" id="sl-th"><div class="fill" style="width:70%"></div><div class="th" style="left:66%"></div></div><span class="val" id="sl-th-v">0.70</span></div></div>
       <div class="adv-row"><label>标题权重</label><div style="display:flex;align-items:center;gap:6px"><div class="slider" id="sl-ti"><div class="fill" style="width:60%"></div><div class="th" style="left:56%"></div></div><span class="val" id="sl-ti-v">60%</span></div></div>
       <div class="adv-row"><label>艺术家权重</label><div style="display:flex;align-items:center;gap:6px"><div class="slider" id="sl-ar"><div class="fill" style="width:40%"></div><div class="th" style="left:36%"></div></div><span class="val" id="sl-ar-v">40%</span></div></div>
+    </div>
+    <div class="adv-cfg">
+      <h4>歌词增强</h4>
+      <div class="adv-row"><label>广告过滤</label><div class="toggle" id="tog-ad" onclick="toggleCfg('enable_ad_filter')"><div class="knob"></div></div></div>
+      <div class="adv-row"><label>自定义广告词</label><input id="cfg_ad_kw" type="text" placeholder="逗号分隔，如：下载,关注,加群" style="flex:1;min-width:0" aria-label="自定义广告关键词"></div>
+    </div>
+    <div class="adv-cfg">
+      <h4>性能优化</h4>
+      <div class="adv-row"><label>最大并发</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg_max_con" type="range" min="1" max="16" value="2" style="width:100px" aria-label="最大并发数"><span class="val" id="cfg_max_con_v">2</span></div></div>
+      <div class="adv-row"><label>自动监测</label><div class="toggle" id="tog-scan" onclick="toggleCfg('enable_auto_scan')"><div class="knob"></div></div></div>
+      <div class="adv-row"><label>扫描间隔（分钟）</label><input id="cfg_scan_int" type="number" min="5" max="1440" value="30" style="width:60px" aria-label="扫描间隔"></div>
     </div>
     <div class="adv-cfg">
       <h4>缓存管理</h4>
@@ -531,13 +549,15 @@ function isMobile(){return window.innerWidth<=768}
 function toggleSidebar(){var sb=E("sidebar"),ov=E("sidebarOverlay");if(sb){sb.classList.toggle("open");if(ov)ov.classList.toggle("open")}}
 function setupMobile(){var mb=E("menuBtn"),dt=E("dTabs"),mt=E("mTabs");if(isMobile()){if(mb)mb.style.display="";if(dt)dt.style.display="none";if(mt)mt.style.display="flex"}else{if(mb)mb.style.display="none";if(dt)dt.style.display="";if(mt)mt.style.display="none";var sb=E("sidebar");if(sb)sb.classList.remove("open");var ov=E("sidebarOverlay");if(ov)ov.classList.remove("open")}}
 
-function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4};var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];var chips=document.querySelectorAll("#srcChips .chip");chips.forEach(function(c,i){c.classList.remove("on");c.setAttribute("aria-pressed","false");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]]){chips[map[panelId]].classList.add("on");chips[map[panelId]].setAttribute("aria-pressed","true")}}
+function showSrc(panelId){document.querySelectorAll(".src-panel").forEach(function(p){p.style.display="none"});var p=E(panelId);if(p)p.style.display="block";var map={"src-acoustid":0,"src-netease":1,"src-qqmusic":2,"src-kugou":3,"src-kuwo":4,"src-migu":5};var srcs=["acoustid","netease","qqmusic","kugou","kuwo","migu"];var chips=document.querySelectorAll("#srcChips .chip");chips.forEach(function(c,i){c.classList.remove("on");c.setAttribute("aria-pressed","false");var st=S.srcStatus[srcs[i]];if(st===true)c.classList.add("green");else if(st===false)c.classList.add("red")});if(chips[map[panelId]]){chips[map[panelId]].classList.add("on");chips[map[panelId]].setAttribute("aria-pressed","true")}}
 
 async function loadCfg(){for(var i=0;i<3;i++){try{var r=await af("./config"),t=await r.text();try{S.cfg=JSON.parse(t);uiCfg();return}catch(e2){if(i<2){await sleep(800);continue}log("cfg parse err","e")}}catch(e){if(i<2){await sleep(800);continue}log("cfg load err:"+e.message,"e")}}}
-function uiCfg(){var el;el=E("cfg_ak");if(el)el.value=S.cfg.acoustid_api_key||"";el=E("cfg_nu");if(el)el.value=S.cfg.netease_api_url||"";el=E("cfg_qu");if(el)el.value=S.cfg.qqmusic_api_url||"";el=E("cfg_ku");if(el)el.value=S.cfg.kugou_api_url||"";el=E("cfg_kw");if(el)el.value=S.cfg.kuwo_api_url||""}
-async function saveCfg(){var el;S.cfg.acoustid_api_key=(el=E("cfg_ak"))?el.value.trim():"";S.cfg.netease_api_url=(el=E("cfg_nu"))?el.value.trim():"";S.cfg.qqmusic_api_url=(el=E("cfg_qu"))?el.value.trim():"";S.cfg.kugou_api_url=(el=E("cfg_ku"))?el.value.trim():"";S.cfg.kuwo_api_url=(el=E("cfg_kw"))?el.value.trim():"";await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();toast("已保存");closeCfg()}
+function uiCfg(){var el;el=E("cfg_ak");if(el)el.value=S.cfg.acoustid_api_key||"";el=E("cfg_nu");if(el)el.value=S.cfg.netease_api_url||"";el=E("cfg_qu");if(el)el.value=S.cfg.qqmusic_api_url||"";el=E("cfg_ku");if(el)el.value=S.cfg.kugou_api_url||"";el=E("cfg_kw");if(el)el.value=S.cfg.kuwo_api_url||"";el=E("cfg_migu");if(el)el.checked=!!S.cfg.enable_migu;el=E("cfg_ad_kw");if(el)el.value=S.cfg.ad_filter_keywords||"";el=E("cfg_max_con");if(el){el.value=S.cfg.max_concurrency||2;var v=E("cfg_max_con_v");if(v)v.textContent=el.value}el=E("cfg_scan_int");if(el)el.value=S.cfg.auto_scan_interval||30;syncToggle("tog-ad",S.cfg.enable_ad_filter!==false);syncToggle("tog-scan",S.cfg.enable_auto_scan===true)}
+function syncToggle(id,on){var el=E(id);if(!el)return;el.classList.toggle("on",on)}
+function toggleCfg(key){S.cfg[key]=!S.cfg[key];var map={enable_ad_filter:"tog-ad",enable_auto_scan:"tog-scan"};syncToggle(map[key],S.cfg[key])}
+async function saveCfg(){var el;S.cfg.acoustid_api_key=(el=E("cfg_ak"))?el.value.trim():"";S.cfg.netease_api_url=(el=E("cfg_nu"))?el.value.trim():"";S.cfg.qqmusic_api_url=(el=E("cfg_qu"))?el.value.trim():"";S.cfg.kugou_api_url=(el=E("cfg_ku"))?el.value.trim():"";S.cfg.kuwo_api_url=(el=E("cfg_kw"))?el.value.trim():"";S.cfg.enable_migu=(el=E("cfg_migu"))?el.checked:false;S.cfg.ad_filter_keywords=(el=E("cfg_ad_kw"))?el.value.trim():"";S.cfg.max_concurrency=(el=E("cfg_max_con"))?parseInt(el.value,10)||2:2;S.cfg.auto_scan_interval=(el=E("cfg_scan_int"))?parseInt(el.value,10)||30:30;await af("./config",{method:"PUT",body:JSON.stringify(S.cfg)});await loadCfg();toast("已保存");closeCfg()}
 async function chkSources(){try{var r=await af("./config/status");if(r.ok){S.srcStatus=await r.json();syncChips()}}catch(e){}}
-function syncChips(){var chips=document.querySelectorAll("#srcChips .chip");var srcs=["acoustid","netease","qqmusic","kugou","kuwo"];chips.forEach(function(c,i){var key=srcs[i];var st=S.srcStatus[key];c.classList.remove("on","green","red");if(st===true)c.classList.add("on","green");else if(st===false)c.classList.add("red");else c.classList.add("on")})}
+function syncChips(){var chips=document.querySelectorAll("#srcChips .chip");var srcs=["acoustid","netease","qqmusic","kugou","kuwo","migu"];chips.forEach(function(c,i){var key=srcs[i];var st=S.srcStatus[key];c.classList.remove("on","green","red");if(st===true)c.classList.add("on","green");else if(st===false)c.classList.add("red");else c.classList.add("on")})}
 var _pluginTheme='light';
 function setPluginTheme(th){_pluginTheme=th;localStorage.setItem('tag-plugin-theme',th);applyPluginTheme();syncThemeChips()}
 function applyPluginTheme(){var th=_pluginTheme;if(th==='auto'){th=(window.SongloftPlugin&&SongloftPlugin.getTheme)?SongloftPlugin.getTheme():'light'}document.documentElement.dataset.theme=th;document.documentElement.className='theme-'+th}
@@ -834,6 +854,7 @@ function initSliders(){
       var onend=function(){document.removeEventListener("touchmove",onmove);document.removeEventListener("touchend",onend)};
       document.addEventListener("touchmove",onmove,{passive:false});document.addEventListener("touchend",onend)};
   });
+  var conEl=E("cfg_max_con");if(conEl){conEl.oninput=function(){var v=E("cfg_max_con_v");if(v)v.textContent=this.value}}
 }
 
 // ---- 目录整理 ----

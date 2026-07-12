@@ -114,6 +114,16 @@ export interface ScraperConfig {
   enable_migu: boolean;
   /** 评分阈值，低于此分数视为匹配失败（默认 0.7） */
   score_threshold: number;
+  /** 广告过滤：自动清理歌词中的推广信息 */
+  enable_ad_filter: boolean;
+  /** 自定义广告关键词（逗号分隔） */
+  ad_filter_keywords: string;
+  /** 最大并发数（1-16，默认 2） */
+  max_concurrency: number;
+  /** 自动监测：定时扫描新文件 */
+  enable_auto_scan: boolean;
+  /** 自动扫描间隔（分钟，默认 30） */
+  auto_scan_interval: number;
 }
 
 export const DEFAULT_CONFIG: ScraperConfig = {
@@ -129,6 +139,11 @@ export const DEFAULT_CONFIG: ScraperConfig = {
   kuwo_api_url: '',
   enable_migu: false,
   score_threshold: 0.7,
+  enable_ad_filter: true,
+  ad_filter_keywords: '',
+  max_concurrency: 2,
+  enable_auto_scan: false,
+  auto_scan_interval: 30,
 };
 
 // ---- 搜索结果类型 ----
@@ -455,23 +470,17 @@ function miguDecrypt(data: Uint8Array): string {
 
 export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
   try {
-    const params = new URLSearchParams({
-      text: keyword,
-      pageNo: '1',
-      pageSize: '10',
-      isCopyright: '1',
-      sort: '1',
-      searchSwitch: JSON.stringify({ song: 1, album: 0, singer: 0, tagSong: 1, mvSong: 0, bestShow: 1 }),
-    });
+    const searchSwitch = JSON.stringify({ song: 1, album: 0, singer: 0, tagSong: 1, mvSong: 0, bestShow: 1 });
+    const qs = `text=${encodeURIComponent(keyword)}&pageNo=1&pageSize=10&isCopyright=1&sort=1&searchSwitch=${encodeURIComponent(searchSwitch)}`;
     const rt = await fetchWithRetry(
-      `https://c.musicapp.migu.cn/v1.0/content/search_all.do?${params.toString()}`,
+      `https://c.musicapp.migu.cn/v1.0/content/search_all.do?${qs}`,
       {
         headers: {
           'ua': 'Android_migu',
-          'version': '6.8.8',
+          'version': '7.0.0',
           'channel': '014021I',
-          'User-Agent': 'Mozilla/5.0',
-          'Referer': 'https://h5.nf.migu.cn/',
+          'User-Agent': 'MIGU/7.0.0 (Android 12)',
+          'Referer': 'https://music.migu.cn/',
         },
       }
     );
@@ -479,9 +488,7 @@ export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
     const resp = rt.resp;
     if (!resp.ok) return [];
 
-    const raw = new Uint8Array(await resp.arrayBuffer());
-    const isEncrypted = String.fromCharCode(raw[0], raw[1], raw[2]) === '\xAB\xCD\x01';
-    const body = isEncrypted ? JSON.parse(miguDecrypt(raw)) : JSON.parse(new TextDecoder().decode(raw));
+    const body = await resp.json();
 
     const songs = body?.songResultData?.result || [];
     return songs.map((s: any) => ({
@@ -534,6 +541,147 @@ export async function searchKuWo(keyword: string): Promise<SearchResult[]> {
   } catch {
     return [];
   }
+}
+
+// ============================================================
+// 广告过滤
+// ============================================================
+
+/** 常见歌词广告模式 */
+const AD_PATTERNS = [
+  // 下载链接
+  /https?:\/\/[^\s]+/gi,
+  // QQ群/微信群
+  /(?:QQ群|qq群|微信群|wx群|加群|群号)[：:\s]*\d+/gi,
+  // 联系方式
+  /(?:微信|wx|QQ|qq)[：:\s]*\S+/gi,
+  // 版权声明（过长的）
+  /(?:版权所有|copyright|©|\(c\)).{20,}/gi,
+  // 网站推广
+  /(?:更多歌词|歌词下载|完整歌词|歌词来源|lyrics?\s*(?:from|by|source))[：:\s]*\S+/gi,
+  // 插件/APP推广
+  /(?:下载|安装|使用)\s*(?:本|此)?(?:插件|软件|APP|app|应用)/gi,
+];
+
+/** 自定义广告关键词（用户配置） */
+let customAdKeywords: string[] = [];
+
+export function setCustomAdKeywords(keywords: string[]): void {
+  customAdKeywords = keywords.filter(k => k.trim().length > 0);
+}
+
+/** 清理歌词中的广告内容 */
+export function filterLyricsAds(lyrics: string): string {
+  if (!lyrics) return lyrics;
+
+  const lines = lyrics.split('\n');
+  const filtered: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // 保留 LRC 时间戳元信息（如 [ar:...] [ti:...] [by:...]）
+    if (/^\[([a-z]+):.*\]$/i.test(trimmed)) {
+      filtered.push(line);
+      continue;
+    }
+
+    // 跳过空行
+    if (!trimmed) {
+      filtered.push(line);
+      continue;
+    }
+
+    // 检查内置广告模式
+    let isAd = false;
+    for (const pattern of AD_PATTERNS) {
+      if (pattern.test(trimmed)) {
+        isAd = true;
+        break;
+      }
+    }
+
+    // 检查自定义广告关键词
+    if (!isAd && customAdKeywords.length > 0) {
+      const lower = trimmed.toLowerCase();
+      for (const kw of customAdKeywords) {
+        if (lower.includes(kw.toLowerCase())) {
+          isAd = true;
+          break;
+        }
+      }
+    }
+
+    if (!isAd) {
+      filtered.push(line);
+    }
+  }
+
+  return filtered.join('\n');
+}
+
+// ============================================================
+// .lrc 文件读取（同目录歌词文件）
+// ============================================================
+
+/**
+ * 尝试从同目录读取 .lrc 歌词文件
+ * 文件名匹配规则：与音频文件同名或同目录下任意 .lrc 文件
+ */
+export async function fetchLrcFromLocal(filePath: string): Promise<string> {
+  if (!filePath) return '';
+
+  try {
+    // 构建 .lrc 文件路径（与音频文件同名）
+    const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc');
+    const token = await songloft.plugin.getToken();
+    const hostUrl = await songloft.plugin.getHostUrl();
+
+    // 尝试通过主机 API 读取 .lrc 文件
+    // 主机需要提供 GET /api/v1/files?path=... 端点
+    const resp = await fetch(`${hostUrl}/api/v1/files?path=${encodeURIComponent(lrcPath)}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (resp.ok) {
+      const content = await resp.text();
+      if (content && content.includes('[') && content.includes(':')) {
+        songloft.log.info(`[lrc] 读取本地歌词文件成功: ${lrcPath}`);
+        return content;
+      }
+    }
+
+    // 如果同名 .lrc 不存在，尝试读取目录下其他 .lrc 文件
+    const dirPath = lrcPath.substring(0, lrcPath.lastIndexOf('/'));
+    const dirResp = await fetch(`${hostUrl}/api/v1/files?path=${encodeURIComponent(dirPath)}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (dirResp.ok) {
+      const files = await dirResp.json();
+      if (Array.isArray(files)) {
+        for (const f of files) {
+          if (typeof f === 'string' && f.endsWith('.lrc')) {
+            const otherLrcPath = `${dirPath}/${f}`;
+            const lrcResp = await fetch(`${hostUrl}/api/v1/files?path=${encodeURIComponent(otherLrcPath)}`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (lrcResp.ok) {
+              const content = await lrcResp.text();
+              if (content && content.includes('[') && content.includes(':')) {
+                songloft.log.info(`[lrc] 读取本地歌词文件成功: ${otherLrcPath}`);
+                return content;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e: any) {
+    songloft.log.warn(`[lrc] 读取本地歌词失败: ${e.message || e}`);
+  }
+
+  return '';
 }
 
 // ============================================================
@@ -668,7 +816,8 @@ export async function enrichFromChineseSources(
   artist: string,
   title: string,
   candidate: { artist: string; title: string },
-  cfg: ScraperConfig
+  cfg: ScraperConfig,
+  filePath?: string
 ): Promise<EnrichResult> {
   songloft.log.info(`[enrich] 开始 enrichment: ${artist} - ${title}`);
   const keyword = `${artist} ${title}`.trim();
@@ -785,6 +934,19 @@ export async function enrichFromChineseSources(
         }
       } catch { /* ignore */ }
     }
+  }
+
+  // 本地 .lrc 文件兜底（在线歌词都失败时尝试）
+  if (!lyrics && filePath) {
+    lyrics = await fetchLrcFromLocal(filePath);
+  }
+
+  // 广告过滤
+  if (cfg.enable_ad_filter && lyrics) {
+    if (cfg.ad_filter_keywords) {
+      setCustomAdKeywords(cfg.ad_filter_keywords.split(',').map(k => k.trim()));
+    }
+    lyrics = filterLyricsAds(lyrics);
   }
 
   return {
