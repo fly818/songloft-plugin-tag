@@ -3,28 +3,28 @@
 ## v2.2.0 (2026-07-12)
 
 ### 新增
-- **广告过滤**：自动清理歌词中的推广信息（下载链接、QQ群、微信、版权长文等），支持自定义关键词
+- **广告过滤**：自动清理歌词中的推广信息（下载链接、群组信息、微信、版权长文等），支持自定义关键词
 - **并发可配置**：批量刮削最大并发数 1-16 可调，默认 2，令牌桶限流 + 信号量控制
 - **自动监测**：定时增量扫描新文件，间隔可配置（5-1440 分钟），配置变更自动重启
-- **咪咕音源**：新增咪咕音乐搜索（公开 API，无需配置 URL），设置面板新增咪咕开关
+- **咪咕音源**：新增公开 API 音源搜索（无需配置 URL），设置面板新增音源开关
 - **.lrc 文件读取**：在线歌词失败时自动尝试读取同目录 .lrc 文件（需主机 API 支持）
 
 ### 改进
 - **设置面板扩展**：新增「歌词增强」和「性能优化」两个配置区块
-- **咪咕连通性检测**：源状态检测新增咪咕 API 连通性探针
+- **咪咕连通性检测**：源状态检测新增公开 API 音源连通性探针
 - **writeTags 返回值**：HTTP 200 统一返回 'ok'（DB 已更新），不再混淆 file_write 状态
 - **批量刮削并发化**：scrapeBatch 使用信号量支持并发，大幅提速
 - **格式写入支持**：主程序 v2.10.0 支持 MP3/FLAC/M4A/OGG/WAV/APE/AIFF 全格式写入，包括 track 字段
 
 ### 修复
-- **咪咕 API 请求头更新**：version 6.8.8→7.0.0，User-Agent 和 Referer 更新，修复 Businesscode:299999
-- **URLSearchParams 兼容**：咪咕查询参数改用手动构建，修复 QuickJS 不支持 URLSearchParams 的问题
+- **公开 API 音源请求头更新**：version 6.8.8→7.0.0，User-Agent 和 Referer 更新
+- **URLSearchParams 兼容**：公开 API 音源查询参数改用手动构建，修复 QuickJS 不支持 URLSearchParams 的问题
 - **响应解析**：改用 resp.json() 替代 resp.arrayBuffer()，修复 QuickJS 二进制响应解析问题
 - **取消任务统计**：修复批量任务取消后 success+skipped+failed 不等于 total 的问题
 - **.lrc 路径遍历防护**：拒绝包含 `..` 的路径，防止目录遍历攻击
 - **缓存补全逻辑**：修复 genre/year/track 任一字段缺失即触发补全（原为全部缺失才补全）
 - **clearCover 返回值**：统一返回 'ok'（HTTP 200），与 writeTags 保持一致
-- **enrichment 熔断保护**：咪咕/酷我搜索添加熔断检查，避免无效请求堆积
+- **enrichment 熔断保护**：各音源搜索添加熔断检查，避免无效请求堆积
 - **批量结果排序**：并发执行后恢复原始顺序，使用 Map 存储排序键
 - **死代码清理**：移除未使用的 miguDecrypt、detectLanguage、resolveTemplate、MIGU_KEY、ScrapePreview
 
@@ -304,7 +304,7 @@
 ### 修复
 - **封面下载损坏**：删除 QuickJS `.text()`→手动 base64 的封面处理，改为直接传 `cover_url` 给 Go 后端 `DownloadCover()`
 - **t2s 繁简转换无效**：5 位 codepoint 编码 (U+20D7E=134526) 溢出导致 Map 全空 → 改为 6 位编码 + 步长 12，恢复 963 对繁简映射
-- **atob 中文乱码**：酷狗歌词 `atob()` 后加 `utf8Decode()`，手动解析 UTF-8 多字节序列，避免 QuickJS 环境下中文歌词乱码
+- **atob 中文乱码**：歌词 `atob()` 后加 `utf8Decode()`，手动解析 UTF-8 多字节序列，避免 QuickJS 环境下中文歌词乱码
 - **`unchanged` 状态误判失败**：`ws === 'unchanged'` 已加入批量刮削成功判断
 - **按钮混乱**：统一 7 按钮 + SVG 图标 + 竖线分组（选择 | 批量 | 单曲）
 - `scraped_done` 污染：`delete merged['status']` / `delete merged['config']` 防止响应体写回存储
@@ -331,7 +331,7 @@
 ## v1.0.3 (2026-05-29)
 
 - 声纹匹配支持 (AcoustID + MusicBrainz)
-- 三源文本搜索 (网易云/QQ音乐/酷狗)
+- 三源文本搜索 (各国内音源)
 - 封面和歌词刮削
 - Ratcliff/Obershelp 文本相似度评分
 - 批量异步刮削 + 进度恢复
