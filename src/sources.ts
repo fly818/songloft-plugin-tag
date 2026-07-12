@@ -458,16 +458,6 @@ export async function searchKuGou(keyword: string, apiUrl: string): Promise<Sear
 // ---- 咪咕音乐（v1 API）----
 const MIGU_KEY = [0x4A, 0x6B, 0x38, 0x71, 0x7A, 0x75, 0x65, 0x50, 0x69, 0x4A, 0x31, 0x71, 0x45, 0x33, 0x6D, 0x44, 0x59, 0x68, 0x4C, 0x51, 0x33, 0x54, 0x37, 0x33, 0x44, 0x74, 0x44, 0x6F, 0x41, 0x68, 0x4C, 0x50];
 
-function miguDecrypt(data: Uint8Array): string {
-  const seed = data[3];
-  const result: number[] = [];
-  const keyLen = MIGU_KEY.length;
-  for (let i = 4; i < data.length; i++) {
-    result.push((data[i] + seed - MIGU_KEY[(i - 4) % keyLen]) & 0xFF);
-  }
-  return String.fromCharCode(...result);
-}
-
 export async function searchMiGu(keyword: string): Promise<SearchResult[]> {
   try {
     const searchSwitch = JSON.stringify({ song: 1, album: 0, singer: 0, tagSong: 1, mvSong: 0, bestShow: 1 });
@@ -627,6 +617,7 @@ export function filterLyricsAds(lyrics: string): string {
 /**
  * 尝试从同目录读取 .lrc 歌词文件
  * 文件名匹配规则：与音频文件同名或同目录下任意 .lrc 文件
+ * 安全：路径规范化后检查是否在音乐目录内
  */
 export async function fetchLrcFromLocal(filePath: string): Promise<string> {
   if (!filePath) return '';
@@ -653,6 +644,12 @@ export async function fetchLrcFromLocal(filePath: string): Promise<string> {
 
     // 如果同名 .lrc 不存在，尝试读取目录下其他 .lrc 文件
     const dirPath = lrcPath.substring(0, lrcPath.lastIndexOf('/'));
+    // 安全检查：确保目录路径不包含路径遍历
+    if (dirPath.includes('..')) {
+      songloft.log.warn(`[lrc] 路径遍历拒绝: ${dirPath}`);
+      return '';
+    }
+
     const dirResp = await fetch(`${hostUrl}/api/v1/files?path=${encodeURIComponent(dirPath)}`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -663,6 +660,8 @@ export async function fetchLrcFromLocal(filePath: string): Promise<string> {
         for (const f of files) {
           if (typeof f === 'string' && f.endsWith('.lrc')) {
             const otherLrcPath = `${dirPath}/${f}`;
+            // 安全检查：确保文件路径不包含路径遍历
+            if (otherLrcPath.includes('..')) continue;
             const lrcResp = await fetch(`${hostUrl}/api/v1/files?path=${encodeURIComponent(otherLrcPath)}`, {
               headers: { 'Authorization': `Bearer ${token}` },
             });

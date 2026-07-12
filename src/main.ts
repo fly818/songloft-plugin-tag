@@ -6,6 +6,7 @@ import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, s
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
 import { circuitStatus, circuitReset } from './circuit';
+import { createSemaphore } from './semaphore';
 
 const router = createRouter();
 
@@ -362,22 +363,6 @@ router.get('/test/t2s', async (_req) => {
 // ============================================================
 // 刮削
 // ============================================================
-
-// 并发控制信号量
-function createSemaphore(max: number) {
-  let current = 0;
-  const queue: (() => void)[] = [];
-  return {
-    async acquire() {
-      if (current < max) { current++; return; }
-      await new Promise<void>(r => queue.push(r));
-    },
-    release() {
-      current--;
-      if (queue.length > 0) queue.shift()!();
-    },
-  };
-}
 
 // 批量任务执行器（支持并发控制）
 async function runBatchTask(taskId: string, task: any): Promise<void> {
@@ -950,8 +935,16 @@ async function startAutoScan(): Promise<void> {
       const newIds = songs.map(s => Number(s.id)).filter(id => !doneIds.has(id));
       if (newIds.length === 0) return;
 
+      // 清理旧的自动扫描任务（保留最近 5 个）
+      const autoScanTasks = [...batchTasks.entries()].filter(([k]) => k.startsWith('auto-'));
+      if (autoScanTasks.length > 5) {
+        for (const [oldId] of autoScanTasks.slice(0, autoScanTasks.length - 5)) {
+          batchTasks.delete(oldId);
+        }
+      }
+
       songloft.log.info(`[auto-scan] 发现 ${newIds.length} 首新歌曲，开始增量扫描`);
-      const taskId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const taskId = 'auto-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       const task = {
         ids: newIds, current: 0, total: newIds.length,
         results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
@@ -961,6 +954,8 @@ async function startAutoScan(): Promise<void> {
       batchTasks.set(taskId, task);
       await runBatchTask(taskId, task);
       songloft.log.info(`[auto-scan] 完成: 成功${task.success} 跳过${task.skipped} 失败${task.failed}`);
+      // 任务完成后删除
+      batchTasks.delete(taskId);
     } catch (e: any) {
       songloft.log.error(`[auto-scan] 异常: ${e.message || e}`);
     }

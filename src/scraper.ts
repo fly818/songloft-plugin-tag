@@ -12,7 +12,6 @@ import {
   searchMiGu,
   searchKuWo,
   enrichFromChineseSources,
-  extractCandidate,
   extractCandidates,
   loadConfig,
   type ScraperConfig,
@@ -23,25 +22,7 @@ import { toSimplified } from './t2s';
 import { cacheGet, cacheSet, cacheCleanup } from './cache';
 import { rateLimitWait } from './ratelimit';
 import { circuitFailure, circuitSuccess, circuitIsOpen } from './circuit';
-
-// ============================================================
-// 并发控制：简单信号量
-// ============================================================
-
-function createSemaphore(max: number) {
-  let current = 0;
-  const queue: (() => void)[] = [];
-  return {
-    async acquire() {
-      if (current < max) { current++; return; }
-      await new Promise<void>(r => queue.push(r));
-    },
-    release() {
-      current--;
-      if (queue.length > 0) queue.shift()!();
-    },
-  };
-}
+import { createSemaphore } from './semaphore';
 
 export interface ScrapeResult {
   songId: number;
@@ -122,6 +103,8 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
 
       const writeResult = await writeTags(songId, result);
       result.fileWriteStatus = writeResult;
+      // 使用 songId 作为 key，保持原始顺序
+      (result as any)._sortKey = songIds.indexOf(songId);
       results.push(result);
 
       if (writeResult === 'ok') {
@@ -137,6 +120,10 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
       sem.release();
     }
   }));
+
+  // 恢复原始顺序
+  results.sort((a, b) => ((a as any)._sortKey || 0) - ((b as any)._sortKey || 0));
+  results.forEach(r => delete (r as any)._sortKey);
 
   // 批量刮削完成后清理过期缓存
   cacheCleanup().catch(() => {});
@@ -181,8 +168,8 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
   const cached = await cacheGet<SearchResult>(candidate.artist, candidate.title);
   if (cached && cached.score >= cfg.score_threshold) {
     songloft.log.info(`[scraper] 缓存命中: ${cached.artist} - ${cached.title} (${cached.score.toFixed(2)})`);
-    // 缓存可能缺少 genre/year/track，从 enrichment 补全
-    if (!cached.genre && !cached.year && !cached.track) {
+    // 缓存可能缺少 genre/year/track，任一字段缺失即触发补全
+    if (!cached.genre || !cached.year || !cached.track) {
       const enrich = await enrichFromChineseSources(cached.artist, cached.title, candidate, cfg, filePath);
       if (enrich.genre) cached.genre = enrich.genre;
       if (enrich.year) cached.year = enrich.year;
@@ -475,7 +462,8 @@ export async function clearCover(songId: number): Promise<string> {
     const data = await resp.json();
     const fileWrite = data.file_write || 'unknown';
     songloft.log.info(`[scraper] 封面已清除: songId=${songId} (file=${fileWrite})`);
-    return fileWrite;
+    // HTTP 200 = DB 已更新，与 writeTags 保持一致
+    return 'ok';
   } catch (e: any) {
     songloft.log.error(`[scraper] 封面清除异常: ${e.message || e}`);
     return 'failed';
