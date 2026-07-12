@@ -84,6 +84,7 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
 }> {
   const cfg = config || await loadConfig();
   const results: ScrapeResult[] = [];
+  const sortKeys = new Map<ScrapeResult, number>();
   let success = 0;
   let skipped = 0;
   const skippedIds: number[] = [];
@@ -103,8 +104,8 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
 
       const writeResult = await writeTags(songId, result);
       result.fileWriteStatus = writeResult;
-      // 使用 songId 作为 key，保持原始顺序
-      (result as any)._sortKey = songIds.indexOf(songId);
+      // 使用 Map 存储排序键，避免污染返回对象
+      sortKeys.set(result, songIds.indexOf(songId));
       results.push(result);
 
       if (writeResult === 'ok') {
@@ -122,8 +123,7 @@ export async function scrapeBatch(songIds: number[], config?: ScraperConfig): Pr
   }));
 
   // 恢复原始顺序
-  results.sort((a, b) => ((a as any)._sortKey || 0) - ((b as any)._sortKey || 0));
-  results.forEach(r => delete (r as any)._sortKey);
+  results.sort((a, b) => (sortKeys.get(a) || 0) - (sortKeys.get(b) || 0));
 
   // 批量刮削完成后清理过期缓存
   cacheCleanup().catch(() => {});

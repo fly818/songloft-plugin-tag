@@ -34,6 +34,7 @@ const batchTasks = new Map<string, {
   failed: number;
   failedIds: number[];
   status: 'running' | 'done';
+  cancelled: boolean;
 }>();
 
 // 已成功刮削的歌曲 ID 集合

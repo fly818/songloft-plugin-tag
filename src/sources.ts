@@ -1,5 +1,6 @@
 /// <reference types="@songloft/plugin-sdk" />
 import { rateLimitWait } from './ratelimit';
+import { circuitIsOpen, circuitSuccess, circuitFailure } from './circuit';
 
 // ============================================================
 // 刮削源客户端
@@ -625,6 +626,11 @@ export async function fetchLrcFromLocal(filePath: string): Promise<string> {
   try {
     // 构建 .lrc 文件路径（与音频文件同名）
     const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc');
+    // 安全检查：确保路径不包含路径遍历
+    if (lrcPath.includes('..')) {
+      songloft.log.warn(`[lrc] 路径遍历拒绝: ${lrcPath}`);
+      return '';
+    }
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
 
@@ -857,24 +863,40 @@ export async function enrichFromChineseSources(
   // 咪咕（需签名）和酷我（无需配置项），按开关启用
   if (cfg.enable_migu) {
     enrichTasks.push((async () => {
+      if (circuitIsOpen('migu')) {
+        songloft.log.info(`[enrich] migu 熔断中，跳过`);
+        return;
+      }
       try {
         await rateLimitWait('migu');
         const results = await searchMiGu(keyword);
         for (const r of results) { r.score = scoreMatch(candidate, r); }
         if (results.length > 0) songloft.log.info(`[enrich] migu 返回 ${results.length} 条`);
         allResults.push(...results);
-      } catch (e: any) { songloft.log.warn(`[enrich] migu 搜索异常: ${e.message || e}`); }
+        circuitSuccess('migu');
+      } catch (e: any) {
+        circuitFailure('migu');
+        songloft.log.warn(`[enrich] migu 搜索异常: ${e.message || e}`);
+      }
     })());
   }
   if (cfg.enable_kuwo) {
     enrichTasks.push((async () => {
+      if (circuitIsOpen('kuwo')) {
+        songloft.log.info(`[enrich] kuwo 熔断中，跳过`);
+        return;
+      }
       try {
         await rateLimitWait('kuwo');
         const results = await searchKuWo(keyword);
         for (const r of results) { r.score = scoreMatch(candidate, r); }
         if (results.length > 0) songloft.log.info(`[enrich] kuwo 返回 ${results.length} 条`);
         allResults.push(...results);
-      } catch (e: any) { songloft.log.warn(`[enrich] kuwo 搜索异常: ${e.message || e}`); }
+        circuitSuccess('kuwo');
+      } catch (e: any) {
+        circuitFailure('kuwo');
+        songloft.log.warn(`[enrich] kuwo 搜索异常: ${e.message || e}`);
+      }
     })());
   }
 
