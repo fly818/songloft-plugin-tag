@@ -20,6 +20,13 @@
 - **咪咕 API 请求头更新**：version 6.8.8→7.0.0，User-Agent 和 Referer 更新，修复 Businesscode:299999
 - **URLSearchParams 兼容**：咪咕查询参数改用手动构建，修复 QuickJS 不支持 URLSearchParams 的问题
 - **响应解析**：改用 resp.json() 替代 resp.arrayBuffer()，修复 QuickJS 二进制响应解析问题
+- **取消任务统计**：修复批量任务取消后 success+skipped+failed 不等于 total 的问题
+- **.lrc 路径遍历防护**：拒绝包含 `..` 的路径，防止目录遍历攻击
+- **缓存补全逻辑**：修复 genre/year/track 任一字段缺失即触发补全（原为全部缺失才补全）
+- **clearCover 返回值**：统一返回 'ok'（HTTP 200），与 writeTags 保持一致
+- **enrichment 熔断保护**：咪咕/酷我搜索添加熔断检查，避免无效请求堆积
+- **批量结果排序**：并发执行后恢复原始顺序，使用 Map 存储排序键
+- **死代码清理**：移除未使用的 miguDecrypt、detectLanguage、resolveTemplate、MIGU_KEY、ScrapePreview
 
 ---
 
