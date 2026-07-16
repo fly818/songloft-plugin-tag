@@ -5,11 +5,12 @@
 ## 构建
 
 ```bash
-npm run build   # songloft-plugin build → dist/tag.jsplugin.zip（esbuild 打包，不做类型检查）
+npm run build      # songloft-plugin build → dist/tag.jsplugin.zip（esbuild 打包，不做类型检查）
+npm run typecheck  # tsc --noEmit（构建器不查类型，提交前必跑）
 npm run dev
 ```
 
-注意：构建器**不跑 tsc**，类型错误会静默进产物。
+注意：构建器**不跑 tsc**，类型错误会静默进产物——所以有独立的 typecheck 脚本。前端 script 块可用 `node -e "new Function(<script内容>)"` 做语法自检。
 
 ## 架构
 
@@ -69,6 +70,8 @@ Swagger（以线上为准，本地摘要会过期）：https://petstore.swagger.
 - **不存在**的端点（插件曾误用）：`GET /api/v1/files`、插件根路径的 POST bridge（见 #31 #37）。
 
 ## 已知问题清单（2026-07 审查）
+
+> **2026-07-16 状态：#1–#26、#28–#32、#34、#36–#39 已全部修复**（v2.3.0，见 FIXPLAN.md 六批次提交 18f3529..HEAD）。#27 为有意功能不修；#33/#35 为误报撤回。下列原始描述保留作历史参考；行号对应 v2.2.0 代码，修复后已漂移。
 
 ### P0 — 功能失效 / 写错数据
 
