@@ -756,12 +756,14 @@ router.get('/song/:id', async (_req, params) => {
       } catch { /* ignore */ }
     }
     // 构建带认证的封面 URL（本地 cover 用相对路径 + access_token，外链直接用）
+    // 注意：宿主 CoverURLPath 返回 /api/v1/songs/{id}/cover?v=<ts> 已含查询串，须按 ?/& 拼接
     let coverUrl = '';
     if (s.cover_url) {
       if (s.cover_url.startsWith('http://') || s.cover_url.startsWith('https://')) {
         coverUrl = s.cover_url;
       } else {
-        coverUrl = `${s.cover_url}?access_token=${token}`;
+        const sep = s.cover_url.includes('?') ? '&' : '?';
+        coverUrl = `${s.cover_url}${sep}access_token=${token}`;
       }
     }
     return jsonResponse({
