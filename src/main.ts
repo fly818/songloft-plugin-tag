@@ -2,11 +2,11 @@
 import { jsonResponse, createRouter, type HTTPRequest, type HTTPResponse } from '@songloft/plugin-sdk';
 import { toSimplified } from './t2s';
 import { scrapeSong, doScrape, writeTags, clearCover, ensureBackup, type ScrapeResult } from './scraper';
-import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig, type SearchResult } from './sources';
+import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, extractCandidates, type ScraperConfig, type SearchResult } from './sources';
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
 import { circuitStatus, circuitReset } from './circuit';
-import { cacheCount, cacheClear } from './cache';
+import { cacheCount, cacheClear, cacheCleanup } from './cache';
 import { createSemaphore } from './semaphore';
 
 const router = createRouter();
@@ -440,7 +440,7 @@ router.get('/test/t2s', async (_req) => {
 // ============================================================
 
 // 批量任务执行器（支持并发控制）
-async function runBatchTask(taskId: string, task: any): Promise<void> {
+async function runBatchTask(taskId: string, task: any, opts?: { skipCache?: boolean }): Promise<void> {
   const cfg = await loadConfig();
   const sem = createSemaphore(cfg.max_concurrency || 2);
   const total = task.ids.length;
@@ -456,7 +456,7 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
         task.skippedIds.push(songId);
         return;
       }
-      const result = await doScrape(songId, cfg);
+      const result = await doScrape(songId, cfg, opts);
       if (!result) {
         songloft.log.info(`[batch] 跳过 songId=${songId}: 无匹配结果`);
         task.skipped++;
@@ -484,6 +484,8 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
   }));
 
   task.status = 'done';
+  // 批量完成后清理过期缓存
+  cacheCleanup().catch(() => {});
 }
 
 // 批量刮削（异步+轮询，解决超时）
@@ -512,8 +514,8 @@ router.post('/scrape/batch', async (req) => {
   };
   batchTasks.set(taskId, task);
 
-  // 异步执行
-  setTimeout(() => runBatchTask(taskId, task), 100);
+  // 异步执行（强制模式同时绕过结果缓存）
+  setTimeout(() => runBatchTask(taskId, task, { skipCache: force }), 100);
 
   return jsonResponse({ taskId, status: 'started', total: newIds.length, skipped: skipIds.length });
 });
@@ -591,13 +593,14 @@ router.post('/scrape/incremental', async () => {
   }
 });
 
-// 单曲刮削
+// 单曲刮削（?force=1 绕过结果缓存）
 router.post('/scrape/:id', async (req, params) => {
   const songId = parseInt(params?.id || '0', 10);
   if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
+  const force = /(?:^|&)force=1(?:&|$)/.test((req as any).query || '');
 
-  songloft.log.info(`[api] 刮削请求: songId=${songId}`);
-  const result = await scrapeSong(songId);
+  songloft.log.info(`[api] 刮削请求: songId=${songId}${force ? ' (强制)' : ''}`);
+  const result = await scrapeSong(songId, undefined, { skipCache: force });
   if (!result) {
     return jsonResponse({ error: '刮削失败，无匹配结果', songId }, 404);
   }
@@ -850,35 +853,25 @@ router.get('/covers/:id', async (_req, params) => {
 
     const candidate = { artist: toSimplified(song.artist || ''), title: toSimplified(song.title || '') };
 
-    const tasks: Promise<{ covers: { url: string; source: string }[]; source: string }>[] = [];
+    // 每源保留结果的 artist/title 供评分（against 搜索结果，而非歌曲自身）
+    const tasks: Promise<{ covers: { url: string; source: string; artist: string; title: string }[]; source: string }>[] = [];
+    const mapCovers = (r: SearchResult[], label: string) =>
+      r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: label, artist: x.artist || '', title: x.title || '' }));
 
     if (cfg.enable_netease && cfg.netease_api_url) {
-      tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({
-        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '网易云' })),
-        source: 'netease'
-      })));
+      tasks.push(searchNetease(keyword, cfg.netease_api_url).then(r => ({ covers: mapCovers(r, '网易云'), source: 'netease' })));
     }
     if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-      tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({
-        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: 'QQ音乐' })),
-        source: 'qqmusic'
-      })));
+      tasks.push(searchQQMusic(keyword, cfg.qqmusic_api_url).then(r => ({ covers: mapCovers(r, 'QQ音乐'), source: 'qqmusic' })));
     }
     if (cfg.enable_kugou && cfg.kugou_api_url) {
-      tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({
-        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '酷狗' })),
-        source: 'kugou'
-      })));
+      tasks.push(searchKuGou(keyword, cfg.kugou_api_url).then(r => ({ covers: mapCovers(r, '酷狗'), source: 'kugou' })));
     }
-    tasks.push(searchMiGu(keyword).then(r => ({
-      covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '咪咕' })),
-      source: 'migu'
-    })));
+    if (cfg.enable_migu) {
+      tasks.push(searchMiGu(keyword).then(r => ({ covers: mapCovers(r, '咪咕'), source: 'migu' })));
+    }
     if (cfg.enable_kuwo) {
-      tasks.push(searchKuWo(keyword).then(r => ({
-        covers: r.filter(x => x.cover_url).map(x => ({ url: x.cover_url!, source: '酷我' })),
-        source: 'kuwo'
-      })));
+      tasks.push(searchKuWo(keyword).then(r => ({ covers: mapCovers(r, '酷我'), source: 'kuwo' })));
     }
 
     const settled = await Promise.allSettled(tasks);
@@ -895,7 +888,8 @@ router.get('/covers/:id', async (_req, params) => {
             const token = await songloft.plugin.getToken();
             url += (url.includes('?') ? '&' : '?') + 'access_token=' + token;
           }
-          const score = scoreMatch(candidate, { artist: song.artist || '', title: song.title || '', source: s.value.source });
+          // 对搜索结果本身评分，命中度高的封面排前
+          const score = scoreMatch(candidate, { artist: c.artist, title: c.title, source: s.value.source });
           allCovers.push({ url, source: c.source, score });
         }
       }
@@ -933,10 +927,15 @@ router.get('/scrape/preview/:id', async (_req, params) => {
     if (!song) return jsonResponse({ error: '歌曲不存在', results: [] }, 404);
 
     const cfg = await loadConfig();
-    const keyword = `${song.artist || ''} ${song.title || ''}`.trim();
+    // 与 doScrape 一致：走 extractCandidates 清洗垃圾标签（如 "Track 01"）+ 繁简转换
+    const filePath = (song as any).file_path || (song as any).filePath || '';
+    const cand0 = extractCandidates(filePath, { artist: song.artist, title: song.title })[0];
+    cand0.artist = toSimplified(cand0.artist);
+    cand0.title = toSimplified(cand0.title);
+    const keyword = `${cand0.artist} ${cand0.title}`.trim();
     if (!keyword) return jsonResponse({ results: [] });
 
-    const candidate = { artist: toSimplified(song.artist || ''), title: toSimplified(song.title || ''), duration: song.duration };
+    const candidate = { artist: cand0.artist, title: cand0.title, duration: song.duration };
     const tasks: Promise<{ results: SearchResult[]; source: string }>[] = [];
 
     if (cfg.enable_netease && cfg.netease_api_url) {
@@ -948,7 +947,9 @@ router.get('/scrape/preview/:id', async (_req, params) => {
     if (cfg.enable_kugou && cfg.kugou_api_url) {
       tasks.push(rateLimitWait('kugou').then(() => searchKuGou(keyword, cfg.kugou_api_url)).then(r => ({ results: r, source: '酷狗' })));
     }
-    tasks.push(rateLimitWait('migu').then(() => searchMiGu(keyword)).then(r => ({ results: r, source: '咪咕' })));
+    if (cfg.enable_migu) {
+      tasks.push(rateLimitWait('migu').then(() => searchMiGu(keyword)).then(r => ({ results: r, source: '咪咕' })));
+    }
     if (cfg.enable_kuwo) {
       tasks.push(rateLimitWait('kuwo').then(() => searchKuWo(keyword)).then(r => ({ results: r, source: '酷我' })));
     }
@@ -1042,20 +1043,27 @@ router.post('/scrape/manual/:id', async (req, params) => {
     const allResults: any[] = [];
     const scores: Record<string, number> = {};
 
+    // 各源独立 try/catch：搜索函数失败会 throw，单源故障不拖垮整个手动刮削
     if (cfg.enable_netease && cfg.netease_api_url) {
-      const r = await searchNetease(keyword, cfg.netease_api_url);
-      r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
-      if (r.length) { scores['netease'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      try {
+        const r = await searchNetease(keyword, cfg.netease_api_url);
+        r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
+        if (r.length) { scores['netease'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      } catch (e: any) { songloft.log.warn(`[manual] netease 搜索失败: ${e.message || e}`); }
     }
     if (cfg.enable_qqmusic && cfg.qqmusic_api_url) {
-      const r = await searchQQMusic(keyword, cfg.qqmusic_api_url);
-      r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
-      if (r.length) { scores['qqmusic'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      try {
+        const r = await searchQQMusic(keyword, cfg.qqmusic_api_url);
+        r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
+        if (r.length) { scores['qqmusic'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      } catch (e: any) { songloft.log.warn(`[manual] qqmusic 搜索失败: ${e.message || e}`); }
     }
     if (cfg.enable_kugou && cfg.kugou_api_url) {
-      const r = await searchKuGou(keyword, cfg.kugou_api_url);
-      r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
-      if (r.length) { scores['kugou'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      try {
+        const r = await searchKuGou(keyword, cfg.kugou_api_url);
+        r.forEach((x: any) => { x.score = scoreMatch({ artist, title }, x); });
+        if (r.length) { scores['kugou'] = Math.max(...r.map((x: any) => x.score)); allResults.push(...r); }
+      } catch (e: any) { songloft.log.warn(`[manual] kugou 搜索失败: ${e.message || e}`); }
     }
 
     let best: any = null;
@@ -1068,6 +1076,9 @@ router.post('/scrape/manual/:id', async (req, params) => {
       artist: best.artist,
       title: best.title,
       album: best.album || '',
+      genre: best.genre || '',
+      year: best.year || '',
+      track: best.track || '',
       cover_url: best.cover_url || '',
       source: best.source,
       score: best.score,
