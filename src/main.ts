@@ -1,7 +1,7 @@
 /// <reference types="@songloft/plugin-sdk" />
-import { jsonResponse, createRouter } from '@songloft/plugin-sdk';
+import { jsonResponse, createRouter, type HTTPRequest, type HTTPResponse } from '@songloft/plugin-sdk';
 import { toSimplified } from './t2s';
-import { scrapeSong, scrapeBatch, doScrape, writeTags, clearCover, type ScrapeResult } from './scraper';
+import { scrapeSong, doScrape, writeTags, clearCover, ensureBackup, type ScrapeResult } from './scraper';
 import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, searchKuGou, searchMiGu, searchKuWo, type ScraperConfig, type SearchResult } from './sources';
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
@@ -52,6 +52,13 @@ async function markScrapedDone(songId: number): Promise<void> {
   try {
     const done = await getScrapedDone();
     done.add(songId);
+    await songloft.storage.set('scraped_done', [...done]);
+  } catch { /* ok */ }
+}
+async function removeScrapedDone(songId: number): Promise<void> {
+  try {
+    const done = await getScrapedDone();
+    done.delete(songId);
     await songloft.storage.set('scraped_done', [...done]);
   } catch { /* ok */ }
 }
@@ -415,7 +422,7 @@ async function runBatchTask(taskId: string, task: any): Promise<void> {
 // 批量刮削（异步+轮询，解决超时）
 router.post('/scrape/batch', async (req) => {
   const body = parseBody(req);
-  const ids: number[] = [...new Set(body.ids || [])];
+  const ids: number[] = [...new Set<number>((body.ids || []).map(Number))].filter(n => Number.isFinite(n) && n > 0);
   const force: boolean = body.force === true;
   if (!ids.length) return jsonResponse({ error: '请提供歌曲 ID 列表' }, 400);
 
@@ -497,7 +504,8 @@ router.post('/scrape/incremental', async () => {
     const task = {
       ids: newIds, current: 0, total: newIds.length,
       results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
-      failed: 0, failedIds: [] as number[], status: 'running' as const,
+      failed: 0, failedIds: [] as number[], status: 'running' as 'running' | 'done',
+      cancelled: false,
     };
     batchTasks.set(taskId, task);
 
@@ -541,6 +549,81 @@ router.post('/cover/clear/:id', async (req, params) => {
     return jsonResponse({ error: '封面清除失败', songId }, 500);
   }
   return jsonResponse({ status: 'ok', file_write: result, songId });
+});
+
+// ============================================================
+// 撤销：恢复刮削写入前的原始标签快照
+// ============================================================
+router.post('/undo/:id', async (_req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
+
+  try {
+    const key = `backup_${songId}`;
+    const raw = await songloft.storage.get(key);
+    if (!raw || typeof raw !== 'object') {
+      return jsonResponse({ error: '无可撤销的记录' }, 404);
+    }
+    const backup = raw as Record<string, any>;
+
+    // 宿主 tags 语义为「非空覆盖，空值保留」：快照中为空的字段传了也不生效，
+    // 直接不传（省一次无效写），并把这些字段名回报给前端提示。
+    const body: Record<string, string | number> = {};
+    const restored: string[] = [];
+    const keptFilled: string[] = [];
+    const fields: [string, string | number][] = [
+      ['title', backup.title || ''],
+      ['artist', backup.artist || ''],
+      ['album', backup.album || ''],
+      ['genre', backup.genre || ''],
+      ['year', typeof backup.year === 'number' ? backup.year : 0],
+      ['track', backup.track || ''],
+      ['lyrics', backup.lyrics || ''],
+    ];
+    for (const [k, v] of fields) {
+      if (v === '' || v === 0) { keptFilled.push(k); continue; }
+      body[k] = v;
+      restored.push(k);
+    }
+
+    if (restored.length > 0) {
+      const token = await songloft.plugin.getToken();
+      const hostUrl = await songloft.plugin.getHostUrl();
+      const resp = await fetch(`${hostUrl}/api/v1/songs/${songId}/tags`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        return jsonResponse({ error: errText.substring(0, 200) }, resp.status);
+      }
+    }
+
+    await songloft.storage.delete(key);
+    await removeScrapedDone(songId);
+    songloft.log.info(`[undo] songId=${songId} 已恢复 ${restored.length} 个字段` + (keptFilled.length ? `，${keptFilled.length} 个原为空的字段无法清空` : ''));
+    return jsonResponse({ ok: true, restored, kept_filled: keptFilled });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
+});
+
+// 单曲已刮标记增/删（校对页采纳/撤销后持久化状态）
+router.post('/storage/scraped/:id', async (_req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
+  await markScrapedDone(songId);
+  return jsonResponse({ ok: true });
+});
+router.delete('/storage/scraped/:id', async (_req, params) => {
+  const songId = parseInt(params?.id || '0', 10);
+  if (!songId) return jsonResponse({ error: '无效的歌曲 ID' }, 400);
+  await removeScrapedDone(songId);
+  return jsonResponse({ ok: true });
 });
 
 // ============================================================
@@ -603,6 +686,15 @@ router.put('/tags/:id', async (req, params) => {
     const id = parseInt(params?.id || '0', 10);
     if (!id) return jsonResponse({ error: '无效 ID' }, 400);
     const body = parseBody(req);
+    // 校对页采纳等场景带 ?snapshot=1：写入前快照原始标签，供撤销恢复
+    if (/(?:^|&)snapshot=1(?:&|$)/.test((req as any).query || '')) {
+      await ensureBackup(id);
+    }
+    // 宿主 WriteSongTagsRequest.year 为 integer，前端可能传字符串
+    if (typeof body.year === 'string') {
+      const y = parseInt(body.year, 10);
+      body.year = isNaN(y) ? 0 : y;
+    }
     const token = await songloft.plugin.getToken();
     const host = await songloft.plugin.getHostUrl();
     const resp = await fetch(`${host}/api/v1/songs/${id}/tags`, {
@@ -827,7 +919,7 @@ router.get('/scrape/preview/:id', async (_req, params) => {
 router.get('/storage/failed', async (_req) => {
   try {
     const raw = await songloft.storage.get('failed_songs');
-    const arr = Array.isArray(raw) ? raw : (raw ? JSON.parse(raw) : []);
+    const arr = Array.isArray(raw) ? raw : (typeof raw === 'string' && raw ? JSON.parse(raw) : []);
     return jsonResponse(arr);
   } catch {
     return jsonResponse([]);
@@ -1012,9 +1104,7 @@ async function onHTTPRequest(req: HTTPRequest): Promise<HTTPResponse> {
   return router.handle(req);
 }
 
-// @ts-expect-error — QuickJS 全局注入
+// QuickJS 全局注入（SDK declare global 已声明签名）
 globalThis.onInit = onInit;
-// @ts-expect-error
 globalThis.onDeinit = onDeinit;
-// @ts-expect-error
 globalThis.onHTTPRequest = onHTTPRequest;

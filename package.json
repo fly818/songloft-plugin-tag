@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "songloft-plugin build",
-    "dev": "songloft-plugin dev"
+    "dev": "songloft-plugin dev",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@songloft/plugin-builder": "^2.4.3",

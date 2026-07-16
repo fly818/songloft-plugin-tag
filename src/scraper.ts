@@ -136,7 +136,8 @@ export async function doScrape(songId: number, cfg: ScraperConfig): Promise<Scra
     return null;
   }
 
-  const filePath = song.file_path || '';
+  // SDK 类型声明为 filePath，但运行时桥接返回 file_path（与宿主 JSON 一致），两者兜底
+  const filePath = (song as any).file_path || (song as any).filePath || '';
   const candidates = extractCandidates(filePath, { artist: song.artist, title: song.title });
 
   // 繁体→简体，提高国内音源匹配率
@@ -346,10 +347,70 @@ function buildResult(
 }
 
 /**
+ * 从宿主获取歌曲完整信息 + 歌词内容（快照 / 清封面共用）
+ */
+export async function fetchSongFromHost(songId: number): Promise<{ song: any; lyrics: string } | null> {
+  const token = await songloft.plugin.getToken();
+  const hostUrl = await songloft.plugin.getHostUrl();
+  const getResp = await fetch(`${hostUrl}/api/v1/songs/${songId}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!getResp.ok) return null;
+  const song = await getResp.json();
+  let lyrics = '';
+  if (song.lyric_url) {
+    try {
+      const lr = await fetch(`${hostUrl}${song.lyric_url}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (lr.ok) {
+        const raw = await lr.text();
+        try { lyrics = JSON.parse(raw).lyric || raw; } catch { lyrics = raw; }
+      }
+    } catch { /* ignore */ }
+  }
+  return { song, lyrics };
+}
+
+const BACKUP_KEY_PREFIX = 'backup_';
+
+/**
+ * 首次写入前快照原始标签。已存在则不覆盖——多次重刮后撤销仍恢复真·原始值。
+ * 快照失败仅告警不阻塞写入（此时宿主大概率也不可用，写入会自行失败）。
+ */
+export async function ensureBackup(songId: number): Promise<void> {
+  try {
+    const key = BACKUP_KEY_PREFIX + songId;
+    const existing = await songloft.storage.get(key);
+    if (existing) return;
+    const fetched = await fetchSongFromHost(songId);
+    if (!fetched) {
+      songloft.log.warn(`[backup] 获取歌曲信息失败，跳过快照: songId=${songId}`);
+      return;
+    }
+    const { song, lyrics } = fetched;
+    await songloft.storage.set(key, {
+      title: song.title || '',
+      artist: song.artist || '',
+      album: song.album || '',
+      genre: song.genre || '',
+      year: typeof song.year === 'number' ? song.year : 0,
+      track: song.track || '',
+      lyrics,
+      ts: Date.now(),
+    });
+  } catch (e: any) {
+    songloft.log.warn(`[backup] 快照失败 songId=${songId}: ${e.message || e}`);
+  }
+}
+
+/**
  * 调用宿主 API 将标签写入歌曲
  */
 export async function writeTags(songId: number, result: ScrapeResult): Promise<string> {
   try {
+    // 首次写入前快照原始标签，供撤销恢复
+    await ensureBackup(songId);
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
 
@@ -402,29 +463,13 @@ export async function clearCover(songId: number): Promise<string> {
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
 
-    // 先获取当前歌曲元数据
-    const getResp = await fetch(`${hostUrl}/api/v1/songs/${songId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!getResp.ok) {
-      songloft.log.error(`[scraper] 清除封面前获取歌曲信息失败 (HTTP ${getResp.status})`);
+    // 先获取当前歌曲元数据 + 歌词
+    const fetched = await fetchSongFromHost(songId);
+    if (!fetched) {
+      songloft.log.error(`[scraper] 清除封面前获取歌曲信息失败: songId=${songId}`);
       return 'failed';
     }
-    const song = await getResp.json();
-
-    // 获取歌词内容
-    let lyrics = '';
-    if (song.lyric_url) {
-      try {
-        const lr = await fetch(`${hostUrl}${song.lyric_url}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (lr.ok) {
-          const raw = await lr.text();
-          try { lyrics = JSON.parse(raw).lyric || raw; } catch { lyrics = raw; }
-        }
-      } catch { /* ignore */ }
-    }
+    const { song, lyrics } = fetched;
 
     const body: Record<string, string | boolean> = {
       title: song.title || '',
@@ -432,7 +477,7 @@ export async function clearCover(songId: number): Promise<string> {
       album: song.album || '',
       genre: (song as any).genre || '',
       year: (song as any).year || '',
-      track: (song as any).track_number || '',
+      track: (song as any).track || '',
       lyrics: lyrics,
       clear_cover: true,
     };
