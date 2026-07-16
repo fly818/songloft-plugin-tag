@@ -130,12 +130,13 @@ async function listAllSongs(): Promise<any[]> {
   return all;
 }
 
-/** 全量歌曲 ID（优先宿主文档化端点 GET /songs/ids，一次返回全部；失败回退分页） */
+/** 全量本地歌曲 ID（优先宿主文档化端点 GET /songs/ids?type=local；失败回退分页过滤）
+ *  刮削/整理仅支持本地歌曲（宿主 /tags 对非 local 直接 400），网络歌曲进队列只会白耗配额+永久失败 */
 async function listAllSongIds(): Promise<number[]> {
   try {
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
-    const resp = await fetch(`${hostUrl}/api/v1/songs/ids`, {
+    const resp = await fetch(`${hostUrl}/api/v1/songs/ids?type=local`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (resp.ok) {
@@ -144,7 +145,9 @@ async function listAllSongIds(): Promise<number[]> {
       if (Array.isArray(ids) && ids.length > 0) return ids.map(Number).filter(n => Number.isFinite(n));
     }
   } catch { /* 回退分页 */ }
-  return (await listAllSongs()).map(s => Number(s.id));
+  return (await listAllSongs())
+    .filter(s => ((s as any).type || 'local') === 'local')
+    .map(s => Number(s.id));
 }
 
 // ============================================================

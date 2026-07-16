@@ -67,6 +67,13 @@ export async function doScrape(songId: number, cfg: ScraperConfig, opts?: { skip
     return null;
   }
 
+  // 仅支持本地歌曲：宿主 /tags 对非 local 类型直接 400，搜了也写不进去（批量中计为跳过）
+  const songType = (song as any).type || 'local';
+  if (songType !== 'local') {
+    songloft.log.info(`[scraper] 跳过非本地歌曲: songId=${songId} (type=${songType})`);
+    return null;
+  }
+
   // SDK 类型声明为 filePath，但运行时桥接返回 file_path（与宿主 JSON 一致），两者兜底
   const filePath = (song as any).file_path || (song as any).filePath || '';
   const candidates = extractCandidates(filePath, { artist: song.artist, title: song.title });
