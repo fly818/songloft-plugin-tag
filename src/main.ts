@@ -117,6 +117,36 @@ function parseBody(req: any): any {
   return {};
 }
 
+/** 全量歌曲列表（分页拉取，突破单次 10000 上限；保险上限 100 页） */
+async function listAllSongs(): Promise<any[]> {
+  const all: any[] = [];
+  const pageSize = 1000;
+  for (let page = 0; page < 100; page++) {
+    const batch = await songloft.songs.list({ limit: pageSize, offset: page * pageSize });
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+  }
+  return all;
+}
+
+/** 全量歌曲 ID（优先宿主文档化端点 GET /songs/ids，一次返回全部；失败回退分页） */
+async function listAllSongIds(): Promise<number[]> {
+  try {
+    const token = await songloft.plugin.getToken();
+    const hostUrl = await songloft.plugin.getHostUrl();
+    const resp = await fetch(`${hostUrl}/api/v1/songs/ids`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const ids = Array.isArray(data) ? data : (data?.ids || data?.data || []);
+      if (Array.isArray(ids) && ids.length > 0) return ids.map(Number).filter(n => Number.isFinite(n));
+    }
+  } catch { /* 回退分页 */ }
+  return (await listAllSongs()).map(s => Number(s.id));
+}
+
 // ============================================================
 // 静态首页重定向
 // ============================================================
@@ -442,17 +472,6 @@ router.post('/storage/org-history', async (req) => {
 });
 
 // ============================================================
-// 调试：t2s 繁简转换测试
-// ============================================================
-router.get('/test/t2s', async (_req) => {
-  const text = '陳小春 獨家記憶 取消资格';
-  const result = toSimplified(text);
-  return jsonResponse({ input: text, output: result });
-});
-
-
-
-// ============================================================
 // 刮削
 // ============================================================
 
@@ -576,11 +595,9 @@ router.get('/scrape/batch/progress', async (req) => {
 // 增量扫描：自动扫描所有未处理的歌曲
 router.post('/scrape/incremental', async () => {
   try {
-    const songs = await songloft.songs.list({ limit: 10000 });
+    const allIds = await listAllSongIds();
     const doneIds = await getScrapedDone();
-    const newIds = songs
-      .map(s => Number(s.id))
-      .filter(id => !doneIds.has(id));
+    const newIds = allIds.filter(id => !doneIds.has(id));
 
     if (!newIds.length) return jsonResponse({ message: '没有新的歌曲需要刮削', count: 0 });
 
@@ -756,7 +773,7 @@ router.get('/song/:id', async (_req, params) => {
       lyrics: lyrics,
       genre: s.genre || '',
       year: s.year || '',
-      track: s.track_number || '',
+      track: s.track || '',
       file_path: s.file_path || '',
     });
   } catch (e: any) {
@@ -803,6 +820,38 @@ router.put('/tags/:id', async (req, params) => {
 });
 
 // ============================================================
+// 歌词写入代理（手动编辑走 lyrics 端点 + lyric_source=manual，重扫不覆盖）
+// ============================================================
+router.put('/lyrics/:id', async (req, params) => {
+  try {
+    const id = parseInt(params?.id || '0', 10);
+    if (!id) return jsonResponse({ error: '无效 ID' }, 400);
+    const body = parseBody(req);
+    const token = await songloft.plugin.getToken();
+    const host = await songloft.plugin.getHostUrl();
+    const resp = await fetch(`${host}/api/v1/songs/${id}/lyrics`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        lyric: body.lyric || '',
+        lyric_source: body.lyric_source || 'manual',
+      }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return jsonResponse({ error: errText.substring(0, 200) }, resp.status);
+    }
+    const data = await resp.json();
+    return jsonResponse(data);
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
+  }
+});
+
+// ============================================================
 // 歌曲列表（前端用）
 // ============================================================
 router.get('/songs', async (req) => {
@@ -816,8 +865,11 @@ router.get('/songs', async (req) => {
     let songs;
     if (keyword) {
       songs = await songloft.songs.search(keyword);
-    } else {
+    } else if (params.get('limit')) {
       songs = await songloft.songs.list({ limit, offset });
+    } else {
+      // 未显式指定 limit 时分页拉全量（突破单次 10000 上限）
+      songs = await listAllSongs();
     }
 
     let token = '';
@@ -839,10 +891,11 @@ router.get('/songs', async (req) => {
         format: s.format || '',
         duration: s.duration || 0,
         cover_url: cUrl,
-        lyrics: (s as any).lyrics || '',
+        // Song 模型无 lyrics 字段，lyric_url 非空即视为有歌词（健康度用）
+        has_lyrics: !!(s as any).lyric_url,
         genre: (s as any).genre || '',
         year: (s as any).year || '',
-        track: (s as any).track_number || '',
+        track: (s as any).track || '',
       };
     });
 
@@ -1125,9 +1178,9 @@ async function startAutoScan(): Promise<void> {
   const tick = async () => {
     if (autoScanStopped) return;
     try {
-      const songs = await songloft.songs.list({ limit: 10000 });
+      const allIds = await listAllSongIds();
       const doneIds = await getScrapedDone();
-      const newIds = songs.map(s => Number(s.id)).filter(id => !doneIds.has(id));
+      const newIds = allIds.filter(id => !doneIds.has(id));
       if (newIds.length > 0) {
         songloft.log.info(`[auto-scan] 发现 ${newIds.length} 首新歌曲，开始增量扫描`);
         const taskId = 'auto-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
