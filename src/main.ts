@@ -6,6 +6,7 @@ import { loadConfig, saveConfig, DEFAULT_CONFIG, searchNetease, searchQQMusic, s
 import { scoreMatch } from './scoring';
 import { rateLimitWait } from './ratelimit';
 import { circuitStatus, circuitReset } from './circuit';
+import { cacheCount, cacheClear } from './cache';
 import { createSemaphore } from './semaphore';
 
 const router = createRouter();
@@ -135,6 +136,16 @@ router.put('/config', async (req) => {
     }
     if (typeof merged.auto_scan_interval === 'number') {
       merged.auto_scan_interval = Math.max(5, Math.min(1440, Math.round(merged.auto_scan_interval)));
+    }
+    // 评分参数范围校验
+    if (typeof merged.score_threshold === 'number') {
+      merged.score_threshold = Math.max(0.5, Math.min(0.9, merged.score_threshold));
+    }
+    if (typeof merged.title_weight === 'number') {
+      merged.title_weight = Math.max(0.2, Math.min(0.8, merged.title_weight));
+    }
+    if (typeof merged.artist_weight === 'number') {
+      merged.artist_weight = Math.max(0.2, Math.min(0.8, merged.artist_weight));
     }
 
     if (merged.netease_api_url && isBadHost(merged.netease_api_url)) {
@@ -281,6 +292,19 @@ router.post('/circuit-breaker/reset', async (req) => {
   const source = body?.source;
   circuitReset(source);
   return jsonResponse({ ok: true, source: source || 'all' });
+});
+
+// ============================================================
+// 缓存管理（缓存在插件 storage，非前端 localStorage）
+// ============================================================
+router.get('/cache/stats', async (_req) => {
+  return jsonResponse({ count: await cacheCount() });
+});
+
+router.post('/cache/clear', async (_req) => {
+  const cleared = await cacheClear();
+  songloft.log.info(`[cache] 手动清除 ${cleared} 条缓存`);
+  return jsonResponse({ cleared });
 });
 
 // ============================================================

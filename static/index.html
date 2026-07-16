@@ -562,7 +562,7 @@ var _pluginTheme='light';
 function setPluginTheme(th){_pluginTheme=th;localStorage.setItem('tag-plugin-theme',th);applyPluginTheme();syncThemeChips()}
 function applyPluginTheme(){var th=_pluginTheme;if(th==='auto'){th=(window.SongloftPlugin&&SongloftPlugin.getTheme)?SongloftPlugin.getTheme():'light'}document.documentElement.dataset.theme=th;document.documentElement.className='theme-'+th}
 function syncThemeChips(){var chips=document.querySelectorAll('#themeChips .chip');chips.forEach(function(c){var sel=c.dataset.theme===_pluginTheme;c.classList.toggle('on',sel);c.setAttribute('aria-pressed',sel?'true':'false')})}
-function openCfg(){syncChips();syncThemeChips();E("cfgModal").classList.add("open");setTimeout(initSliders,50)}
+function openCfg(){syncChips();syncThemeChips();E("cfgModal").classList.add("open");loadCacheStats();setTimeout(initSliders,50)}
 function closeCfg(){E("cfgModal").classList.remove("open")}
 
 async function loadScraped(){try{var r=await af("./storage/scraped");if(r.ok){var d=await r.json();(d||[]).forEach(function(id){S._scraped.add(Number(id))})}}catch(e){}updStats();if(S._tab==="songs")render()}
@@ -823,25 +823,56 @@ async function undoApply(id){
 function toggleHealth(){E("healthPanel").classList.toggle("open")}
 function updateHealth(){var all=S._allSongs||[];if(!all.length)return;var fields={title:0,artist:0,album:0,cover:0,lyrics:0};all.forEach(function(s){if(s.title)fields.title++;if(s.artist)fields.artist++;if(s.album)fields.album++;if(s.cover_url)fields.cover++;if(s.lyrics)fields.lyrics++});var total=all.length;[["title","hp-title","hp-title-v"],["artist","hp-artist","hp-artist-v"],["album","hp-album","hp-album-v"],["cover","hp-cover","hp-cover-v"],["lyrics","hp-lyrics","hp-lyrics-v"]].forEach(function(pair){var pct=Math.round(fields[pair[0]]/total*100);var bar=E(pair[1]),val=E(pair[2]);if(bar){bar.style.width=pct+"%";bar.style.background=pct>=80?"var(--ok)":pct>=50?"var(--warn)":"var(--error)"}if(val)val.textContent=pct+"%"})}
 function clearCache(){
-  var keys=Object.keys(localStorage).filter(function(k){return k.indexOf("scrape_cache_")===0});
-  keys.forEach(function(k){localStorage.removeItem(k)});
-  toast("已清除 "+keys.length+" 条缓存")
+  af("./cache/clear",{method:"POST"}).then(function(r){return r.json()}).then(function(d){
+    if(d.error){toast("清除失败: "+d.error);return}
+    toast("已清除 "+(d.cleared||0)+" 条缓存");
+    var c=E("cacheCnt");if(c)c.textContent="0";
+  }).catch(function(e){toast("清除失败: "+e.message)})
+}
+function loadCacheStats(){
+  af("./cache/stats").then(function(r){return r.json()}).then(function(d){
+    var c=E("cacheCnt");if(c)c.textContent=String(d.count||0);
+  }).catch(function(){})
 }
 function initSliders(){
-  [["sl-th",0.5,0.9,0.02,"",2],["sl-ti",0.4,0.8,0.02,"%",0],["sl-ar",0.2,0.6,0.02,"%",0]].forEach(function(cfg){
+  // cfgKey: 关联配置字段；linkKey: 联动字段（标题/艺术家权重和恒为 1）
+  [["sl-th",0.5,0.9,0.02,"",2,"score_threshold",null],
+   ["sl-ti",0.2,0.8,0.02,"%",0,"title_weight","sl-ar"],
+   ["sl-ar",0.2,0.8,0.02,"%",0,"artist_weight","sl-ti"]].forEach(function(cfg){
     var el=E(cfg[0]);if(!el)return;
-    var min=cfg[1],max=cfg[2],step=cfg[3],suffix=cfg[4],decimals=cfg[5];
+    var min=cfg[1],max=cfg[2],step=cfg[3],suffix=cfg[4],decimals=cfg[5],cfgKey=cfg[6],linkId=cfg[7];
     var valEl=E(cfg[0]+"-v");
     var fill=el.querySelector(".fill"),th=el.querySelector(".th");
-    var current=min+(max-min)*0.5;
+    function fmt(v){return suffix==="%"?Math.round(v*100)+"%":v.toFixed(decimals)}
+    function setUI(v){
+      v=Math.max(min,Math.min(max,v));
+      var p=(v-min)/(max-min)*100;
+      if(fill)fill.style.width=p+"%";
+      if(th)th.style.left="calc("+p+"% - 5px)";
+      if(valEl)valEl.textContent=fmt(v);
+      return v;
+    }
+    // 从配置初始化
+    var current=setUI(typeof S.cfg[cfgKey]==="number"?S.cfg[cfgKey]:(min+max)/2);
     function updateSlider(pct){
       pct=Math.max(0,Math.min(1,pct));
       current=min+pct*(max-min);
       current=Math.round(current/step)*step;
-      var p=(current-min)/(max-min)*100;
-      if(fill)fill.style.width=p+"%";
-      if(th)th.style.left="calc("+p+"% - 5px)";
-      if(valEl)valEl.textContent=current.toFixed(decimals)+suffix;
+      current=setUI(current);
+      S.cfg[cfgKey]=Number(current.toFixed(2));
+      // 权重联动：另一个 = 1 - 当前（保持和为 1）
+      if(linkId){
+        var other=1-current;
+        var otherKey=cfgKey==="title_weight"?"artist_weight":"title_weight";
+        S.cfg[otherKey]=Number(other.toFixed(2));
+        var oEl=E(linkId);if(oEl){
+          var op=(Math.max(min,Math.min(max,other))-min)/(max-min)*100;
+          var of=oEl.querySelector(".fill"),ot=oEl.querySelector(".th"),ov=E(linkId+"-v");
+          if(of)of.style.width=op+"%";
+          if(ot)ot.style.left="calc("+op+"% - 5px)";
+          if(ov)ov.textContent=Math.round(other*100)+"%";
+        }
+      }
     }
     el.onmousedown=function(e){var rect=el.getBoundingClientRect();updateSlider((e.clientX-rect.left)/rect.width);
       var onmove=function(e2){updateSlider((e2.clientX-rect.left)/rect.width)};

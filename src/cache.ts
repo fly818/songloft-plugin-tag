@@ -79,11 +79,37 @@ export async function cacheCleanup(): Promise<void> {
       if (!raw) continue;
       const entry: CacheEntry = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if (now - entry.ts > CACHE_TTL) {
-        await songloft.storage.set(k, null);
+        await songloft.storage.delete(k);
       } else {
         alive.push(k);
       }
     }
     await songloft.storage.set('cache_keys', JSON.stringify(alive));
   } catch { /* ignore */ }
+}
+
+/** 缓存条目数 */
+export async function cacheCount(): Promise<number> {
+  try {
+    const raw = await songloft.storage.get('cache_keys');
+    let keys: string[] = [];
+    if (Array.isArray(raw)) keys = raw;
+    else if (typeof raw === 'string') { try { keys = JSON.parse(raw); } catch { /* ignore */ } }
+    return keys.length;
+  } catch { return 0; }
+}
+
+/** 清空全部缓存，返回清除条数 */
+export async function cacheClear(): Promise<number> {
+  try {
+    const raw = await songloft.storage.get('cache_keys');
+    let keys: string[] = [];
+    if (Array.isArray(raw)) keys = raw;
+    else if (typeof raw === 'string') { try { keys = JSON.parse(raw); } catch { /* ignore */ } }
+    for (const k of keys) {
+      try { await songloft.storage.delete(k); } catch { /* ignore */ }
+    }
+    await songloft.storage.set('cache_keys', JSON.stringify([]));
+    return keys.length;
+  } catch { return 0; }
 }

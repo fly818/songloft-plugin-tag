@@ -6,7 +6,7 @@ import { circuitIsOpen, circuitSuccess, circuitFailure } from './circuit';
 // 刮削源客户端
 // ============================================================
 
-import { scoreMatch } from './scoring';
+import { scoreMatch, setScoreWeights } from './scoring';
 
 import { ModeOfOperation, utils } from 'aes-js';
 
@@ -90,6 +90,10 @@ export interface ScraperConfig {
   enable_migu: boolean;
   /** 评分阈值，低于此分数视为匹配失败（默认 0.7） */
   score_threshold: number;
+  /** 标题相似度权重（默认 0.6，与 artist_weight 归一化后生效） */
+  title_weight: number;
+  /** 艺术家相似度权重（默认 0.4） */
+  artist_weight: number;
   /** 广告过滤：自动清理歌词中的推广信息 */
   enable_ad_filter: boolean;
   /** 自定义广告关键词（逗号分隔） */
@@ -115,6 +119,8 @@ export const DEFAULT_CONFIG: ScraperConfig = {
   kuwo_api_url: '',
   enable_migu: false,
   score_threshold: 0.7,
+  title_weight: 0.6,
+  artist_weight: 0.4,
   enable_ad_filter: true,
   ad_filter_keywords: '',
   max_concurrency: 2,
@@ -1029,16 +1035,18 @@ function cleanFilenameNoise(s: string): string {
 const CONFIG_KEY = 'scraper_config';
 
 export async function loadConfig(): Promise<ScraperConfig> {
+  let cfg: ScraperConfig = { ...DEFAULT_CONFIG };
   try {
     const raw = await songloft.storage.get(CONFIG_KEY);
     if (raw && typeof raw === 'object') {
-      return { ...DEFAULT_CONFIG, ...raw };
-    }
-    if (raw && typeof raw === 'string') {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+      cfg = { ...DEFAULT_CONFIG, ...raw };
+    } else if (raw && typeof raw === 'string') {
+      cfg = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
     }
   } catch { /* ignore */ }
-  return { ...DEFAULT_CONFIG };
+  // 所有刮削路径都经过 loadConfig，在此注入评分权重（唯一必经点）
+  setScoreWeights(cfg.title_weight, cfg.artist_weight);
+  return cfg;
 }
 export async function saveConfig(config: ScraperConfig): Promise<void> {
   await songloft.storage.set(CONFIG_KEY, JSON.stringify(config));
