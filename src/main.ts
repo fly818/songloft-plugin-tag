@@ -39,29 +39,46 @@ const batchTasks = new Map<string, {
 }>();
 
 // 已成功刮削的歌曲 ID 集合
+// 内存缓存 + promise 链串行写：并发标记不丢（原先读改写竞态），也省掉每首歌一次全量读
+let scrapedDoneCache: Set<number> | null = null;
+let scrapedWriteChain: Promise<void> = Promise.resolve();
+
 async function getScrapedDone(): Promise<Set<number>> {
+  if (scrapedDoneCache) return scrapedDoneCache;
   try {
     const raw = await songloft.storage.get('scraped_done');
     let arr: number[];
     if (Array.isArray(raw)) { arr = raw; }
     else if (typeof raw === 'string') { arr = JSON.parse(raw); }
     else { arr = []; }
-    return new Set(arr);
-  } catch { return new Set(); }
+    scrapedDoneCache = new Set(arr.map(Number));
+  } catch { scrapedDoneCache = new Set(); }
+  return scrapedDoneCache;
+}
+function persistScrapedDone(): Promise<void> {
+  scrapedWriteChain = scrapedWriteChain.then(async () => {
+    try {
+      if (scrapedDoneCache) await songloft.storage.set('scraped_done', [...scrapedDoneCache]);
+    } catch { /* ok */ }
+  });
+  return scrapedWriteChain;
 }
 async function markScrapedDone(songId: number): Promise<void> {
-  try {
-    const done = await getScrapedDone();
-    done.add(songId);
-    await songloft.storage.set('scraped_done', [...done]);
-  } catch { /* ok */ }
+  const done = await getScrapedDone();
+  done.add(songId);
+  await persistScrapedDone();
 }
 async function removeScrapedDone(songId: number): Promise<void> {
-  try {
-    const done = await getScrapedDone();
-    done.delete(songId);
-    await songloft.storage.set('scraped_done', [...done]);
-  } catch { /* ok */ }
+  const done = await getScrapedDone();
+  done.delete(songId);
+  await persistScrapedDone();
+}
+async function clearScrapedDone(): Promise<void> {
+  scrapedDoneCache = new Set();
+  scrapedWriteChain = scrapedWriteChain.then(async () => {
+    try { await songloft.storage.delete('scraped_done'); } catch { /* ok */ }
+  });
+  await scrapedWriteChain;
 }
 
 // 埋点统计（首次安装/升级记数）
@@ -486,6 +503,8 @@ async function runBatchTask(taskId: string, task: any, opts?: { skipCache?: bool
   task.status = 'done';
   // 批量完成后清理过期缓存
   cacheCleanup().catch(() => {});
+  // 无论前端是否轮询，10 分钟后清理任务，防内存泄漏
+  setTimeout(() => batchTasks.delete(taskId), 10 * 60 * 1000);
 }
 
 // 批量刮削（异步+轮询，解决超时）
@@ -539,9 +558,6 @@ router.get('/scrape/batch/progress', async (req) => {
   const task = batchTasks.get(taskId);
   if (!task) return jsonResponse({ error: '任务不存在' }, 404);
   const latest = task.results[task.results.length - 1];
-  if (task.status === 'done') {
-    setTimeout(() => batchTasks.delete(taskId), 60000);
-  }
   return jsonResponse({
     status: task.status,
     current: task.current,
@@ -1015,7 +1031,7 @@ router.get('/storage/scraped', async (_req) => {
 });
 router.delete('/storage/scraped', async (_req) => {
   try {
-    await songloft.storage.delete('scraped_done');
+    await clearScrapedDone();
     return jsonResponse({ ok: true });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e) }, 500);
@@ -1093,54 +1109,55 @@ router.post('/scrape/manual/:id', async (req, params) => {
 // 生命周期
 // ============================================================
 
-// 自动监测定时器
-let autoScanTimer: ReturnType<typeof setInterval> | null = null;
+// 自动监测定时器（自链式 setTimeout：上一批跑完才排下一次，批次耗时超过间隔也不会重叠执行）
+let autoScanTimer: ReturnType<typeof setTimeout> | null = null;
+let autoScanStopped = true;
 
 async function startAutoScan(): Promise<void> {
-  if (autoScanTimer) return;
+  if (!autoScanStopped) return; // 已在运行
   const cfg = await loadConfig();
   if (!cfg.enable_auto_scan) return;
 
   const intervalMs = (cfg.auto_scan_interval || 30) * 60 * 1000;
+  autoScanStopped = false;
   songloft.log.info(`[tag] 自动监测已启动，间隔 ${cfg.auto_scan_interval || 30} 分钟`);
 
-  autoScanTimer = setInterval(async () => {
+  const tick = async () => {
+    if (autoScanStopped) return;
     try {
       const songs = await songloft.songs.list({ limit: 10000 });
       const doneIds = await getScrapedDone();
       const newIds = songs.map(s => Number(s.id)).filter(id => !doneIds.has(id));
-      if (newIds.length === 0) return;
-
-      // 清理旧的自动扫描任务（保留最近 5 个）
-      const autoScanTasks = [...batchTasks.entries()].filter(([k]) => k.startsWith('auto-'));
-      if (autoScanTasks.length > 5) {
-        for (const [oldId] of autoScanTasks.slice(0, autoScanTasks.length - 5)) {
-          batchTasks.delete(oldId);
-        }
+      if (newIds.length > 0) {
+        songloft.log.info(`[auto-scan] 发现 ${newIds.length} 首新歌曲，开始增量扫描`);
+        const taskId = 'auto-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const task = {
+          ids: newIds, current: 0, total: newIds.length,
+          results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
+          failed: 0, failedIds: [] as number[], status: 'running' as 'running' | 'done',
+          cancelled: false,
+        };
+        batchTasks.set(taskId, task);
+        await runBatchTask(taskId, task);
+        songloft.log.info(`[auto-scan] 完成: 成功${task.success} 跳过${task.skipped} 失败${task.failed}`);
+        batchTasks.delete(taskId);
       }
-
-      songloft.log.info(`[auto-scan] 发现 ${newIds.length} 首新歌曲，开始增量扫描`);
-      const taskId = 'auto-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const task = {
-        ids: newIds, current: 0, total: newIds.length,
-        results: [] as any[], success: 0, skipped: 0, skippedIds: [] as number[],
-        failed: 0, failedIds: [] as number[], status: 'running' as const,
-        cancelled: false,
-      };
-      batchTasks.set(taskId, task);
-      await runBatchTask(taskId, task);
-      songloft.log.info(`[auto-scan] 完成: 成功${task.success} 跳过${task.skipped} 失败${task.failed}`);
-      // 任务完成后删除
-      batchTasks.delete(taskId);
     } catch (e: any) {
       songloft.log.error(`[auto-scan] 异常: ${e.message || e}`);
+    } finally {
+      if (!autoScanStopped) {
+        autoScanTimer = setTimeout(tick, intervalMs);
+      }
     }
-  }, intervalMs);
+  };
+
+  autoScanTimer = setTimeout(tick, intervalMs);
 }
 
 function stopAutoScan(): void {
-  if (autoScanTimer) {
-    clearInterval(autoScanTimer);
+  autoScanStopped = true;
+  if (autoScanTimer !== null) {
+    clearTimeout(autoScanTimer);
     autoScanTimer = null;
     songloft.log.info('[tag] 自动监测已停止');
   }
