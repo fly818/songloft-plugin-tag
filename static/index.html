@@ -387,6 +387,8 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
           <button class="ab" onclick="dlCover()" id="btnDlCover" disabled><span class="mi">download</span>封面</button>
           <button class="ab" onclick="clearCover()" id="btnClearCover" disabled><span class="mi">hide_image</span>清除</button>
           <span class="sep"></span>
+          <button class="ab" onclick="openBatchEdit()" id="btnBatchEdit" disabled><span class="mi">edit</span>编辑</button>
+          <span class="sep"></span>
           <button class="ab" onclick="selAll()"><span class="mi">check_box</span>全选</button>
           <button class="ab" onclick="selNone()"><span class="mi">check_box_outline_blank</span>清空</button>
           <span class="sep"></span>
@@ -461,17 +463,18 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
   <div class="sheet-head"><h3 id="sheetTitle">编辑歌曲</h3><button class="close-btn" onclick="closeSheet()"><span class="mi" style="font-size:16px">close</span></button></div>
   <div class="sheet-cover"><div><div class="cover-lg" id="sheetCover" onclick="document.getElementById('ef_cover').click()" role="button" tabindex="0"><div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div></div><input type="file" id="ef_cover" accept="image/*" style="display:none" aria-label="选择封面图片"><div class="cover-info"><p id="sheetInfo">-</p></div></div></div>
   <div class="sheet-body">
-    <div class="fg"><label>标题</label><input id="ef_tit" aria-label="标题"></div>
+    <div class="fg" id="fg_tit"><label>标题</label><input id="ef_tit" aria-label="标题"></div>
     <div class="fg"><label>艺术家</label><input id="ef_art" aria-label="艺术家"></div>
     <div class="fg"><label>专辑</label><input id="ef_alb" aria-label="专辑"></div>
     <div class="fg"><label>流派</label><input id="ef_gen" aria-label="流派"></div>
     <div class="fg"><label>年份</label><input id="ef_year" aria-label="年份"></div>
-    <div class="fg"><label>音轨号</label><input id="ef_track" aria-label="音轨号"></div>
-    <div class="fg full"><label>歌词</label><textarea id="ef_lyr" aria-label="歌词"></textarea></div>
+    <div class="fg" id="fg_track"><label>音轨号</label><input id="ef_track" aria-label="音轨号"></div>
+    <div class="fg full" id="fg_lyr"><label>歌词</label><textarea id="ef_lyr" aria-label="歌词"></textarea></div>
+    <div class="fg full" id="fg_batchHint" style="display:none"><span style="font-size:10px;color:var(--tx-2);font-weight:300">填写的字段将应用到所有选中歌曲，留空字段保持各自原值（不支持批量清空）</span></div>
   </div>
   <div class="sheet-foot">
-    <button class="save" onclick="saveEditSheet()"><span class="mi" style="font-size:13px">save</span> 保存</button>
-    <button class="scrape" onclick="scrapeEdit()"><span class="mi" style="font-size:13px">search</span> 刮削</button>
+    <button class="save" onclick="S._batchIds.length?saveBatchEdit():saveEditSheet()"><span class="mi" style="font-size:13px">save</span> 保存</button>
+    <button class="scrape" id="btnSheetScrape" onclick="scrapeEdit()"><span class="mi" style="font-size:13px">search</span> 刮削</button>
     <button class="cancel" onclick="closeSheet()">取消</button>
   </div>
 </div>
@@ -536,7 +539,7 @@ body{background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65;overfl
 </div>
 
 <script>
-var S={songs:[],sel:new Set,cfg:{},srcStatus:{},prev:null,busy:false,retryId:0,failedSongs:[],_allSongs:[],_remoteSongs:[],_scraped:new Set,_tab:"songs",_songView:"local"},S_editId=0;
+var S={songs:[],sel:new Set,cfg:{},srcStatus:{},prev:null,busy:false,retryId:0,failedSongs:[],_allSongs:[],_remoteSongs:[],_scraped:new Set,_tab:"songs",_songView:"local",_batchIds:[]},S_editId=0;
 var E=function(id){return document.getElementById(id)};
 function token(){try{if(window.SongloftPlugin)return SongloftPlugin.getAuthToken()||""}catch(e){}try{var r=localStorage.getItem("songloft-auth");if(r)return JSON.parse(r).accessToken||""}catch(e){}return new URLSearchParams(location.search).get("access_token")||""}
 async function af(u,o){o=o||{};o.headers=o.headers||{};var t=token();if(t)o.headers["Authorization"]="Bearer "+t;if(!o.headers["Content-Type"]&&o.method)o.headers["Content-Type"]="application/json";return fetch(u,o)}
@@ -617,7 +620,7 @@ function selectOne(id,ev){if(ev)ev.stopPropagation();S.sel.clear();S.sel.add(id)
 function selAll(){if(S._songView==="remote"){toast("网络歌曲不支持刮削");return}S.songs.forEach(function(s){S.sel.add(s.id)});render()}
 function selNone(){S.sel.clear();render()}
 function ids(){var r=[];S.sel.forEach(function(id){r.push(id)});return r}
-function upd(){var hs=S.sel.size>0;[["btnDlCover",!hs],["btnClearCover",!hs],["btnScrape",!hs],["btnForce",!hs]].forEach(function(p){var e=E(p[0]);if(e)e.disabled=p[1]});if(S.busy){var s=E("btnScrape"),f=E("btnForce");if(s)s.disabled=true;if(f)f.disabled=true}}
+function upd(){var hs=S.sel.size>0;[["btnDlCover",!hs],["btnClearCover",!hs],["btnScrape",!hs],["btnForce",!hs],["btnBatchEdit",!hs]].forEach(function(p){var e=E(p[0]);if(e)e.disabled=p[1]});if(S.busy){var s=E("btnScrape"),f=E("btnForce");if(s)s.disabled=true;if(f)f.disabled=true}}
 function updStats(){var t=E("ds-total"),o=E("ds-ok"),f=E("ds-fail"),p=E("ds-pend");if(!t)return;var all=S._allSongs||S.songs||[],idSet=new Set(all.map(function(s){return Number(s.id)})),scraped=S._scraped||new Set,fids=new Set();(S.failedSongs||[]).forEach(function(x){fids.add(Number(x.id))});var ok=0,fail=0;for(var i=0;i<all.length;i++){var sid=Number(all[i].id);if(fids.has(sid))fail++;else if(scraped.has(sid)&&idSet.has(sid))ok++}t.textContent=all.length;o.textContent=ok;f.textContent=fail;p.textContent=all.length-ok-fail}
 
 function _sc(songId){return af("./scrape/"+songId,{method:"POST"}).then(function(r){return r.json()}).then(function(d){if(d.error){log("失败:"+d.error,"e");addFailed(songId,d.error);return null}log("ok "+d.artist+" - "+d.title+" | "+d.source+" | "+d.fileWriteStatus,"ok");if(d.fileWriteStatus==="failed"){addFailed(songId,d.fileWriteStatus)}else{S.failedSongs=S.failedSongs.filter(function(f){return f.id!==songId});updStats();if(S._tab==="failed")renderFailed();af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)}).catch(function(){})}return d}).catch(function(e){log("错误:"+e.message,"e");return null})}
@@ -639,8 +642,60 @@ async function doRetry(){var id=S.retryId;if(!id)return;var art=E("ra").value.tr
 async function applyR(el){var id=el.dataset.sid,art=el.dataset.art,tit=el.dataset.tit,alb=el.dataset.alb,gen=el.dataset.gen||"",yr=el.dataset.yr||"",tr=el.dataset.tr||"";closeRetry();S.busy=true;setP(true,0);try{var r=await af("./tags/"+id,{method:"PUT",body:JSON.stringify({title:tit,artist:art,album:alb,genre:gen,year:yr,track:tr})}),d=await r.json();if(d.error){log("写入失败:"+d.error,"e");toast("失败")}else{log("ok "+art+" - "+tit+" | "+d.file_write,"ok");toast("写入成功");S.failedSongs=S.failedSongs.filter(function(f){return String(f.id)!==String(id)});updStats();if(S._tab==="failed")renderFailed();try{await af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)})}catch(e){}await loadSongs()}}catch(e){log("错误:"+e.message,"e")}S.busy=false;setP(false,100)}
 
 function syncEditor(){if(S.sel.size===1){var a=[];S.sel.forEach(function(id){a.push(id)});var id=a[0];if(S_editId!==id)selectEdit(id)}else{S_editId=0}}
-function selectEdit(id){S_editId=id;S._coverData=null;S._origLyrics="";var s=findSong(id);var el;el=E("ef_tit");if(el)el.value=s?s.title||"":"";el=E("ef_art");if(el)el.value=s?s.artist||"":"";el=E("ef_alb");if(el)el.value=s?s.album||"":"";el=E("ef_gen");if(el)el.value=s?s.genre||"":"";el=E("ef_year");if(el)el.value=s?s.year||"":"";el=E("ef_track");if(el)el.value=s?s.track||"":"";el=E("ef_lyr");if(el)el.value="";el=E("ef_cover");if(el)el.value="";el=E("sheetInfo");if(el)el.textContent=(s?s.artist+" · "+s.album:"");el=E("sheetCover");if(el){if(s&&s.cover_url){el.innerHTML='<img src="'+escH(s.cover_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}else{el.innerHTML='<div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}}var fi=E("ef_cover");if(fi)fi.onchange=function(){var f=fi.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(e2){S._coverData=e2.target.result.split(",")[1];el=E("sheetCover");if(el)el.innerHTML='<img src="'+e2.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'};reader.readAsDataURL(f)};af("./song/"+id).then(function(r){return r.json()}).then(function(d){if(!d.error){el=E("ef_gen");if(el)el.value=d.genre||"";el=E("ef_year");if(el)el.value=d.year||"";el=E("ef_track");if(el)el.value=d.track||"";el=E("ef_lyr");if(el)el.value=d.lyrics||"";S._origLyrics=d.lyrics||"";if(d.cover_url&&!S._coverData&&S_editId===id){el=E("sheetCover");if(el)el.innerHTML='<img src="'+escH(d.cover_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}}}).catch(function(){});E("sheet").classList.add("open");E("sheetOverlay").classList.add("open")}
-function closeSheet(){E("sheet").classList.remove("open");E("sheetOverlay").classList.remove("open")}
+function selectEdit(id){S_editId=id;S._coverData=null;S._origLyrics="";S._batchIds=[];["fg_tit","fg_track","fg_lyr"].forEach(function(x){var e=E(x);if(e)e.style.display=""});var bh=E("fg_batchHint");if(bh)bh.style.display="none";var sc=E("btnSheetScrape");if(sc)sc.style.display="";var stt=E("sheetTitle");if(stt)stt.textContent="编辑歌曲";["ef_art","ef_alb","ef_gen","ef_year"].forEach(function(x){var e=E(x);if(e)e.placeholder=""});var s=findSong(id);var el;el=E("ef_tit");if(el)el.value=s?s.title||"":"";el=E("ef_art");if(el)el.value=s?s.artist||"":"";el=E("ef_alb");if(el)el.value=s?s.album||"":"";el=E("ef_gen");if(el)el.value=s?s.genre||"":"";el=E("ef_year");if(el)el.value=s?s.year||"":"";el=E("ef_track");if(el)el.value=s?s.track||"":"";el=E("ef_lyr");if(el)el.value="";el=E("ef_cover");if(el)el.value="";el=E("sheetInfo");if(el)el.textContent=(s?s.artist+" · "+s.album:"");el=E("sheetCover");if(el){if(s&&s.cover_url){el.innerHTML='<img src="'+escH(s.cover_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}else{el.innerHTML='<div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}}var fi=E("ef_cover");if(fi)fi.onchange=function(){var f=fi.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(e2){S._coverData=e2.target.result.split(",")[1];el=E("sheetCover");if(el)el.innerHTML='<img src="'+e2.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'};reader.readAsDataURL(f)};af("./song/"+id).then(function(r){return r.json()}).then(function(d){if(!d.error){el=E("ef_gen");if(el)el.value=d.genre||"";el=E("ef_year");if(el)el.value=d.year||"";el=E("ef_track");if(el)el.value=d.track||"";el=E("ef_lyr");if(el)el.value=d.lyrics||"";S._origLyrics=d.lyrics||"";if(d.cover_url&&!S._coverData&&S_editId===id){el=E("sheetCover");if(el)el.innerHTML='<img src="'+escH(d.cover_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'}}}).catch(function(){});E("sheet").classList.add("open");E("sheetOverlay").classList.add("open")}
+function closeSheet(){E("sheet").classList.remove("open");E("sheetOverlay").classList.remove("open");
+  // 退出批量模式并还原被隐藏的行 / 刮削按钮 / 标题
+  if(S._batchIds&&S._batchIds.length){S._batchIds=[];["fg_tit","fg_track","fg_lyr"].forEach(function(id){var e=E(id);if(e)e.style.display=""});var bh=E("fg_batchHint");if(bh)bh.style.display="none";var sc=E("btnSheetScrape");if(sc)sc.style.display="";var st=E("sheetTitle");if(st)st.textContent="编辑歌曲";["ef_art","ef_alb","ef_gen","ef_year"].forEach(function(id){var e=E(id);if(e)e.placeholder=""})}}
+// ---- 批量编辑（补全歌手/专辑等，宿主"非空覆盖、空值保留"语义，无需新端点） ----
+function openBatchEdit(){
+  if(S._songView==="remote"){toast("网络歌曲不支持编辑");return}
+  var ids=[];S.sel.forEach(function(id){ids.push(id)});
+  if(!ids.length){toast("请先选择歌曲");return}
+  S._batchIds=ids;S._coverData=null;
+  var songs=ids.map(function(id){return findSong(id)}).filter(Boolean);
+  var st=E("sheetTitle");if(st)st.textContent="批量编辑 "+ids.length+" 首歌曲";
+  // 隐藏标题/音轨号/歌词行 + 刮削按钮，显示批量提示
+  ["fg_tit","fg_track","fg_lyr"].forEach(function(id){var e=E(id);if(e)e.style.display="none"});
+  var bh=E("fg_batchHint");if(bh)bh.style.display="";var sc=E("btnSheetScrape");if(sc)sc.style.display="none";
+  // 各字段留空，placeholder 显示共同值 / "多个不同值"
+  [["ef_art","artist"],["ef_alb","album"],["ef_gen","genre"],["ef_year","year"]].forEach(function(p){
+    var el=E(p[0]);if(!el)return;el.value="";
+    var vals={},first="";songs.forEach(function(s){var v=(s[p[1]]==null?"":String(s[p[1]])).trim();if(v){vals[v]=1;if(!first)first=v}});
+    var keys=Object.keys(vals);
+    el.placeholder=keys.length===0?"（留空保持原值）":keys.length===1?"当前: "+first:"多个不同值（留空保持原值）";
+  });
+  // 信息行列出前几首歌名
+  var names=songs.slice(0,3).map(function(s){return s.title||"?"}).join("、")+(songs.length>3?" 等 "+songs.length+" 首":"");
+  var si=E("sheetInfo");if(si)si.textContent=names;
+  // 封面区（初始占位；上传走与单曲一致的 onchange）
+  var el=E("sheetCover");if(el)el.innerHTML='<div class="ph"><span class="mi">music_note</span></div><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 上传封面</div>';
+  var fi=E("ef_cover");if(fi){fi.value="";fi.onchange=function(){var f=fi.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(e2){S._coverData=e2.target.result.split(",")[1];var el2=E("sheetCover");if(el2)el2.innerHTML='<img src="'+e2.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="upload-hint"><span class="mi" style="font-size:11px">photo_camera</span> 更换封面</div>'};reader.readAsDataURL(f)}}
+  E("sheet").classList.add("open");E("sheetOverlay").classList.add("open");
+}
+async function saveBatchEdit(){
+  if(S.busy)return;var ids=S._batchIds||[];if(!ids.length)return;
+  var el;var art=(el=E("ef_art"))?el.value.trim():"";var alb=(el=E("ef_alb"))?el.value.trim():"";var gen=(el=E("ef_gen"))?el.value.trim():"";var yr=(el=E("ef_year"))?el.value.trim():"";
+  var body={};if(art)body.artist=art;if(alb)body.album=alb;if(gen)body.genre=gen;if(yr)body.year=yr;if(S._coverData)body.cover_data=S._coverData;
+  if(!Object.keys(body).length){toast("未填写任何字段");return}
+  if(yr&&!/^\d{1,4}$/.test(yr)){toast("年份需为数字");return}
+  var applied=Object.keys(body).filter(function(k){return k!=="cover_data"}).map(function(k){return{artist:"艺术家",album:"专辑",genre:"流派",year:"年份"}[k]}).concat(S._coverData?["封面"]:[]).join("、");
+  closeSheet();
+  S.busy=true;setP(true,0);var ok=0,fail=0,total=ids.length;
+  log("批量编辑 "+total+" 首: "+applied);
+  for(var i=0;i<ids.length;i++){var id=ids[i],s=findSong(id);
+    setP(true,Math.round((i+1)/total*100));
+    try{var r=await af("./tags/"+id,{method:"PUT",body:JSON.stringify(body)});var d=await r.json().catch(function(){return{}});
+      if(!r.ok||d.error){fail++;log("失败 #"+id+": "+(d.error||r.status),"e")}
+      else{ok++;if(s){if(body.artist)s.artist=body.artist;if(body.album)s.album=body.album;if(body.genre)s.genre=body.genre;if(body.year)s.year=body.year}
+        S.failedSongs=S.failedSongs.filter(function(f){return f.id!==id})}
+    }catch(e){fail++;log("异常 #"+id+": "+e.message,"e")}
+    await sleep(200);
+  }
+  try{await af("./storage/failed",{method:"POST",body:JSON.stringify(S.failedSongs)})}catch(e){}
+  S.busy=false;setP(false,100);S._coverData=null;
+  toast("批量编辑: 成功"+ok+(fail?" 失败"+fail:""));
+  await loadSongs();
+}
 async function saveEditSheet(){if(!S_editId)return;var el;var tit=(el=E("ef_tit"))?el.value.trim():"";var art=(el=E("ef_art"))?el.value.trim():"";var alb=(el=E("ef_alb"))?el.value.trim():"";var gen=(el=E("ef_gen"))?el.value.trim():"";var yr=(el=E("ef_year"))?el.value.trim():"";var tr=(el=E("ef_track"))?el.value.trim():"";var lyr=(el=E("ef_lyr"))?el.value:"";var s0=findSong(S_editId);var cleared=[];if(s0){[["标题",s0.title,tit],["艺术家",s0.artist,art],["专辑",s0.album,alb],["流派",s0.genre,gen],["年份",s0.year,yr],["音轨号",s0.track,tr]].forEach(function(p){if(p[1]&&String(p[1]).trim()&&!p[2])cleared.push(p[0])})}var body={title:tit,artist:art,album:alb,genre:gen,year:yr,track:tr};if(S._coverData){body.cover_data=S._coverData}try{var r=await af("./tags/"+S_editId,{method:"PUT",body:JSON.stringify(body)});if(r.ok){
 // 歌词单独走 lyrics 端点（lyric_source=manual，扫描重扫不覆盖）
 if(lyr!==S._origLyrics){try{await af("./lyrics/"+S_editId,{method:"PUT",body:JSON.stringify({lyric:lyr,lyric_source:"manual"})})}catch(e){}}
