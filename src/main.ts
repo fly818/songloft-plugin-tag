@@ -284,7 +284,7 @@ router.post('/circuit-breaker/reset', async (req) => {
 });
 
 // ============================================================
-// 目录整理
+// 目录整理（转发宿主文档化端点，body 为裸数组 [{id, target_path}]）
 // ============================================================
 router.post('/organize/preview', async (req) => {
   try {
@@ -294,28 +294,25 @@ router.post('/organize/preview', async (req) => {
       return jsonResponse({ error: '请提供歌曲列表', changes: [] }, 400);
     }
 
-    // 调用主程序 Bridge API
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
-    const resp = await fetch(`${hostUrl}/api/v1/jsplugin/tag`, {
+    const resp = await fetch(`${hostUrl}/api/v1/songs/organize/preview`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        action: 'songs.organizePreview',
-        data: { items },
-      }),
+      body: JSON.stringify(items.map((it: any) => ({ id: Number(it.id), target_path: String(it.target_path || '') }))),
     });
 
     if (!resp.ok) {
       const errText = await resp.text();
-      return jsonResponse({ error: errText, changes: [] }, resp.status);
+      return jsonResponse({ error: errText.substring(0, 300), changes: [] }, resp.status);
     }
 
+    // 宿主返回 [{id, old_path, new_path, status: ok|conflict|skip|error, error}]
     const result = await resp.json();
-    return jsonResponse({ changes: result || [] });
+    return jsonResponse({ changes: Array.isArray(result) ? result : [] });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e), changes: [] }, 500);
   }
@@ -331,29 +328,75 @@ router.post('/organize/execute', async (req) => {
 
     const token = await songloft.plugin.getToken();
     const hostUrl = await songloft.plugin.getHostUrl();
-    const resp = await fetch(`${hostUrl}/api/v1/jsplugin/tag`, {
+
+    // 执行前记录 old_path（宿主 execute 响应只带 file_path，撤销历史需要原路径）
+    const oldPaths: Record<number, string> = {};
+    for (const it of items) {
+      const id = Number(it.id);
+      try {
+        const song = await songloft.songs.getById(id);
+        oldPaths[id] = (song as any)?.file_path || (song as any)?.filePath || '';
+      } catch { oldPaths[id] = ''; }
+    }
+
+    const resp = await fetch(`${hostUrl}/api/v1/songs/organize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        action: 'songs.organize',
-        data: { items },
-      }),
+      body: JSON.stringify(items.map((it: any) => ({ id: Number(it.id), target_path: String(it.target_path || '') }))),
     });
 
     if (!resp.ok) {
       const errText = await resp.text();
-      return jsonResponse({ error: errText, results: [] }, resp.status);
+      return jsonResponse({ error: errText.substring(0, 300), results: [] }, resp.status);
     }
 
+    // 宿主返回 [{id, file_path, status, error}]
     const result = await resp.json();
-    const success = (result || []).filter((r: any) => r.status === 'ok').length;
-    const failed = (result || []).filter((r: any) => r.status !== 'ok').length;
-    return jsonResponse({ success, failed, results: result || [] });
+    const arr: any[] = Array.isArray(result) ? result : [];
+    const success = arr.filter((r: any) => r.status === 'ok').length;
+    const failed = arr.length - success;
+
+    // 成功项写入撤销历史（后端持有 old_path，比前端传参可靠）；撤销自身不入史
+    const okItems = body?.skip_history ? [] : arr
+      .filter((r: any) => r.status === 'ok')
+      .map((r: any) => ({ id: r.id, old_path: oldPaths[r.id] || '', new_path: r.file_path || '' }))
+      .filter((r: any) => r.old_path);
+    if (okItems.length > 0) {
+      try {
+        const raw = await songloft.storage.get('org_history');
+        let history: any[] = Array.isArray(raw) ? raw : (typeof raw === 'string' && raw ? JSON.parse(raw) : []);
+        history.push({ items: okItems, time: Date.now() });
+        if (history.length > 10) history = history.slice(-10);
+        await songloft.storage.set('org_history', history);
+      } catch { /* 历史写入失败不影响整理结果 */ }
+    }
+
+    return jsonResponse({ success, failed, results: arr });
   } catch (e: any) {
     return jsonResponse({ error: e.message || String(e), results: [] }, 500);
+  }
+});
+
+// 整理撤销历史（前端无 songloft 全局，历史必须存后端）
+router.get('/storage/org-history', async (_req) => {
+  try {
+    const raw = await songloft.storage.get('org_history');
+    const arr = Array.isArray(raw) ? raw : (typeof raw === 'string' && raw ? JSON.parse(raw) : []);
+    return jsonResponse(arr);
+  } catch {
+    return jsonResponse([]);
+  }
+});
+router.post('/storage/org-history', async (req) => {
+  try {
+    const data = parseBody(req);
+    await songloft.storage.set('org_history', Array.isArray(data) ? data : []);
+    return jsonResponse({ ok: true });
+  } catch (e: any) {
+    return jsonResponse({ error: e.message || String(e) }, 500);
   }
 });
 

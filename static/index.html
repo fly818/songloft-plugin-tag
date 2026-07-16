@@ -570,7 +570,7 @@ function markScraped(id){S._scraped.add(Number(id));updStats();if(S._tab==="song
 
 async function loadSongs(){try{var r=await af("./songs"),d=await r.json();S._allSongs=d.songs||d||[];S.songs=S._allSongs.slice();if(!S._musicPrefix&&S._allSongs.length){var fp=(S._allSongs[0].file_path||"").replace(/^\//,""),si=fp.indexOf("/");S._musicPrefix=si>0?fp.substring(0,si)+"/":"";S._rootName=S._musicPrefix?S._musicPrefix.replace(/\/$/,""):"全部"}render()}catch(e){log("加载失败:"+e.message,"e")}}
 function doSearch(){var kw=E("searchInput").value.trim().toLowerCase();S._curPath="";S.songs=kw?S._allSongs.filter(function(s){return(s.title||"").toLowerCase().indexOf(kw)>=0||(s.artist||"").toLowerCase().indexOf(kw)>=0||(s.album||"").toLowerCase().indexOf(kw)>=0}):S._allSongs.slice();render()}
-function switchTab(name){S._tab=name;S.sel.clear();document.querySelectorAll("#dTabs button,#mTabs button").forEach(function(b){b.classList.toggle("on",b.dataset.tab===name)});var sl=E("songList"),fp=E("failedPanel"),hp=E("healthPanel"),st=E("statsStrip"),tb=document.querySelector(".toolbar"),sb=E("sidebar"),bc=E("breadcrumb"),bar=E("barInfo"),lg=document.querySelector(".logwrap"),mb=E("menuBtn"),ov=E("sidebarOverlay"),mt=E("mTabs"),dt=E("dTabs"),sp=document.querySelector(".hdr .spacer"),hr=E("hBtnReadme"),hc=E("hBtnClog"),rf=document.querySelector(".hdr-btn[onclick*='location.reload']"),cfg=document.querySelector(".hdr-btn[onclick*='openCfg']"),lb=E("backBtn");if(name==="songs"){var op=E("organizePanel");if(op)op.style.display="none";if(sl)sl.style.display="";if(fp)fp.style.display="none";if(hp){hp.classList.remove("open")}if(st)st.style.display="";if(tb)tb.style.display="";if(sb)sb.style.display="";if(bc)bc.style.display="";if(bar)bar.parentElement.style.display="";if(lg)lg.style.display="";if(mt)mt.style.display="";if(lb)lb.style.display="none";if(rf)rf.style.display="";if(cfg)cfg.style.display="";if(hr)hr.style.display="";if(hc)hc.style.display="";if(sp)sp.style.display="";loadCfg().then(function(){chkSources()});loadSongs().then(function(){loadFailed()});setupMobile()}else if(name==="organize"){var op=E("organizePanel");if(sl)sl.style.display="none";if(fp)fp.style.display="none";if(op)op.style.display="flex";if(hp){hp.classList.remove("open")}if(st)st.style.display="none";if(tb)tb.style.display="none";if(sb)sb.style.display="";if(bc)bc.style.display="";if(bar)bar.parentElement.style.display="none";if(lg)lg.style.display="none";if(mb)mb.style.display="none";if(ov)ov.classList.remove("open");if(mt)mt.style.display="none";if(dt)dt.style.display="none";if(rf)rf.style.display="none";if(cfg)cfg.style.display="none";if(hr)hr.style.display="none";if(hc)hc.style.display="none";if(sp)sp.style.display="none";if(!lb){lb=document.createElement("button");lb.id="backBtn";lb.className="hdr-btn";lb.innerHTML="<span class=\"mi\" style=\"font-size:16px\">arrow_back</span>";lb.onclick=function(){switchTab("songs")};document.querySelector(".hdr").appendChild(lb)}if(lb)lb.style.display="";if(t&&S._allSongs){var oh='<div class="b-tn'+(S._curPath===""?' sel':'')+'" style="padding-left:8px" onclick="navTo(\'\')"><span class="mi">'+(S._curPath===""?'folder_open':'folder')+'</span>'+(S._rootName||"全部歌曲")+'</div>';oh+=buildOrgTree("",0);t.innerHTML=oh}if(bc)bc.textContent=(S._curPath||S._rootName||"全部歌曲");loadOrgSongs();setupMobile()}else if(name==="failed"){var op=E("organizePanel");if(op)op.style.display="none";if(sl)sl.style.display="none";if(fp)fp.style.display="flex";if(hp){hp.classList.remove("open")}if(st)st.style.display="none";if(tb)tb.style.display="none";if(sb){sb.style.display="none";sb.classList.remove("open")}if(bc)bc.style.display="none";if(bar)bar.parentElement.style.display="none";if(lg)lg.style.display="none";if(mb)mb.style.display="none";if(ov)ov.classList.remove("open");if(mt)mt.style.display="none";if(dt)dt.style.display="none";if(rf)rf.style.display="none";if(cfg)cfg.style.display="none";if(hr)hr.style.display="none";if(hc)hc.style.display="none";if(sp)sp.style.display="none";if(!lb){lb=document.createElement("button");lb.id="backBtn";lb.className="hdr-btn";lb.innerHTML='<span class="mi" style="font-size:16px">arrow_back</span>';lb.onclick=function(){switchTab('songs')};document.querySelector(".hdr").insertBefore(lb,document.querySelector(".hdr .logo"))}if(lb)lb.style.display="";loadFailed().then(function(){renderFailed()})}}
+function switchTab(name){S._tab=name;S.sel.clear();document.querySelectorAll("#dTabs button,#mTabs button").forEach(function(b){b.classList.toggle("on",b.dataset.tab===name)});var sl=E("songList"),fp=E("failedPanel"),hp=E("healthPanel"),st=E("statsStrip"),tb=document.querySelector(".toolbar"),sb=E("sidebar"),bc=E("breadcrumb"),bar=E("barInfo"),lg=document.querySelector(".logwrap"),mb=E("menuBtn"),ov=E("sidebarOverlay"),mt=E("mTabs"),dt=E("dTabs"),sp=document.querySelector(".hdr .spacer"),hr=E("hBtnReadme"),hc=E("hBtnClog"),rf=document.querySelector(".hdr-btn[onclick*='location.reload']"),cfg=document.querySelector(".hdr-btn[onclick*='openCfg']"),lb=E("backBtn");if(name==="songs"){var op=E("organizePanel");if(op)op.style.display="none";if(sl)sl.style.display="";if(fp)fp.style.display="none";if(hp){hp.classList.remove("open")}if(st)st.style.display="";if(tb)tb.style.display="";if(sb)sb.style.display="";if(bc)bc.style.display="";if(bar)bar.parentElement.style.display="";if(lg)lg.style.display="";if(mt)mt.style.display="";if(lb)lb.style.display="none";if(rf)rf.style.display="";if(cfg)cfg.style.display="";if(hr)hr.style.display="";if(hc)hc.style.display="";if(sp)sp.style.display="";loadCfg().then(function(){chkSources()});loadSongs().then(function(){loadFailed()});setupMobile()}else if(name==="organize"){var op=E("organizePanel");if(sl)sl.style.display="none";if(fp)fp.style.display="none";if(op)op.style.display="flex";if(hp){hp.classList.remove("open")}if(st)st.style.display="none";if(tb)tb.style.display="none";if(sb)sb.style.display="";if(bc)bc.style.display="";if(bar)bar.parentElement.style.display="none";if(lg)lg.style.display="none";if(mb)mb.style.display="none";if(ov)ov.classList.remove("open");if(mt)mt.style.display="none";if(dt)dt.style.display="none";if(rf)rf.style.display="none";if(cfg)cfg.style.display="none";if(hr)hr.style.display="none";if(hc)hc.style.display="none";if(sp)sp.style.display="none";if(!lb){lb=document.createElement("button");lb.id="backBtn";lb.className="hdr-btn";lb.innerHTML="<span class=\"mi\" style=\"font-size:16px\">arrow_back</span>";lb.onclick=function(){switchTab("songs")};document.querySelector(".hdr").appendChild(lb)}if(lb)lb.style.display="";var t=E("treeContainer");if(t&&S._allSongs){var oh='<div class="b-tn'+(S._curPath===""?' sel':'')+'" style="padding-left:8px" onclick="navTo(\'\')"><span class="mi">'+(S._curPath===""?'folder_open':'folder')+'</span>'+(S._rootName||"全部歌曲")+'</div>';oh+=buildOrgTree("",0);t.innerHTML=oh}if(bc)bc.textContent=(S._curPath||S._rootName||"全部歌曲");loadOrgSongs();setupMobile()}else if(name==="failed"){var op=E("organizePanel");if(op)op.style.display="none";if(sl)sl.style.display="none";if(fp)fp.style.display="flex";if(hp){hp.classList.remove("open")}if(st)st.style.display="none";if(tb)tb.style.display="none";if(sb){sb.style.display="none";sb.classList.remove("open")}if(bc)bc.style.display="none";if(bar)bar.parentElement.style.display="none";if(lg)lg.style.display="none";if(mb)mb.style.display="none";if(ov)ov.classList.remove("open");if(mt)mt.style.display="none";if(dt)dt.style.display="none";if(rf)rf.style.display="none";if(cfg)cfg.style.display="none";if(hr)hr.style.display="none";if(hc)hc.style.display="none";if(sp)sp.style.display="none";if(!lb){lb=document.createElement("button");lb.id="backBtn";lb.className="hdr-btn";lb.innerHTML='<span class="mi" style="font-size:16px">arrow_back</span>';lb.onclick=function(){switchTab('songs')};document.querySelector(".hdr").insertBefore(lb,document.querySelector(".hdr .logo"))}if(lb)lb.style.display="";loadFailed().then(function(){renderFailed()})}}
 function renderFailed(){if(S._tab==="failed"){renderReview();return}var lst=E("fpList"),cnt=E("fpCount");if(!lst)return;var list=S.failedSongs||[];if(cnt)cnt.textContent=list.length;if(!list.length){lst.innerHTML='<div class="empty"><span class="mi" style="font-size:40px;display:block;margin-bottom:10px;opacity:.12">check_circle</span>没有失败记录</div>';return}lst.innerHTML=list.map(function(f){var sid=Number(f.id);var s=findSong(sid);var name=s?(s.artist||"?")+" - "+(s.title||"?"):"#"+sid;var reason=f.reason||"未知错误";var time=f.time?new Date(f.time).toLocaleString():"";return'<div class="fitem" onclick="retryFailed(0,'+sid+')"><div class="fi-cover"><span class="mi">error</span></div><div class="fi-meta"><div class="t"><span class="name">'+esc(name)+'</span><span class="tag fail">失败</span></div><div class="reason">'+esc(reason)+'</div>'+(time?'<div class="time">'+esc(time)+'</div>':'')+'</div><div class="fi-retry"><button class="ab" onclick="event.stopPropagation();retryFailed(0,'+sid+')"><span class="mi">refresh</span></button></div></div>'}).join("")}
 function showAll(){S._curPath="";S.songs=S._allSongs.slice();render()}
 function filterPath(){var arr=S._allSongs||[],p=S._curPath||"";if(!p)S.songs=arr.slice();else{var mp=S._musicPrefix||"";var prefix=mp+(p?p+"/":"");S.songs=arr.filter(function(s){var fp=(s.file_path||"").replace(/^\//,"");return fp.startsWith(prefix)&&fp.indexOf("/",prefix.length)<0})}render()}
@@ -947,23 +947,25 @@ function orgNavTo(path){S._curPath=path||"";var t=E("treeContainer"),c=E("breadc
 function buildOrgTree(path,depth){var mp=S._musicPrefix||"";var prefix=mp+(path?path+"/":""),sub={};S._allSongs.forEach(function(s){var fp=(s.file_path||"").replace(/^\//,"");if(!fp.startsWith(prefix))return;var rel=fp.substring(prefix.length);if(rel[0]==="/")rel=rel.substring(1);var i=rel.indexOf("/");if(i>0)sub[rel.substring(0,i)]=true});var keys=Object.keys(sub).sort(),h="",sel=S._curPath||"";for(var i=0;i<keys.length;i++){var nm=keys[i],pn=path?path+"/"+nm:nm;h+='<div class="b-tn'+(pn===sel?' sel':'')+'" style="padding-left:'+(depth*14+8)+'px" onclick="navTo(\''+escH(pn)+'\')"><span class="mi">'+(pn===sel?'folder_open':'folder')+'</span>'+esc(nm)+'</div>';h+=buildOrgTree(pn,depth+1)}return h}
 function getTargetPath(s){
   var fp=s.file_path||"";
-  var lastDot=fp.lastIndexOf(".");
-  var ext=(lastDot>0)?fp.substring(lastDot+1):"flac";
+  var base=fp.split("/").pop()||"";
+  var lastDot=base.lastIndexOf(".");
+  // 宿主要求扩展名与原文件一致；取不到扩展名时不伪造，保留原文件名整体
+  var ext=(lastDot>0)?base.substring(lastDot+1):"";
   var artist=(s.artist||"未知艺术家").replace(/[/\\?%*:|"<>]/g,"_");
   var title=(s.title||"未知标题").replace(/[/\\?%*:|"<>]/g,"_");
   var album=(s.album||"未知专辑").replace(/[/\\?%*:|"<>]/g,"_");
   var year=s.year?String(s.year):"";
   var genre=(s.genre||"").replace(/[/\\?%*:|"<>]/g,"_");
-  var track=s.track?String(s.track):"";
+  var track=s.track?String(s.track).replace(/[/\\?%*:|"<>]/g,"_"):"";
   var fieldMap={artist:artist,album:album,year:year||"未知年份",genre:genre||"未知流派",track:track,title:title};
   var dirLevels=S._orgDirLevels.filter(function(v){return v!==""});
   var dir="";
   dirLevels.forEach(function(f){if(fieldMap[f])dir+="/"+fieldMap[f]});
   var renameLevels=S._orgRenameLevels.filter(function(v){return v!==""});
   var fname="";
-  if(renameLevels.length===0){var base=fp.split("/").pop();var dot=base.lastIndexOf(".");fname=dot>0?base.substring(0,dot):(base||title)}
-  else{fname=renameLevels.map(function(f){return fieldMap[f]||""}).filter(function(v){return v}).join(" - ")}
-  return(dir?dir+"/":"")+fname+"."+ext;
+  if(renameLevels.length===0){var dot=base.lastIndexOf(".");fname=dot>0?base.substring(0,dot):(base||title)}
+  else{fname=renameLevels.map(function(f){return fieldMap[f]||""}).filter(function(v){return v}).join(" - ")||title}
+  return(dir?dir.substring(1)+"/":"")+fname+(ext?"."+ext:"");
 }
 function orgGetSelected(){
   if(S._orgSel.size===0)return S._orgSongs.slice();
@@ -971,21 +973,22 @@ function orgGetSelected(){
 }
 async function orgPreview(){
   if(S._orgBusy)return;S._orgBusy=true;
-  var pending=orgGetSelected();
-  if(!pending.length){toast("没有待处理的歌曲");return}
-  var items=pending.map(function(s){return{id:Number(s.id),target_path:getTargetPath(s)}});
-  toast("正在预览...");
   try{
+    var pending=orgGetSelected();
+    if(!pending.length){toast("没有待处理的歌曲");return}
+    var items=pending.map(function(s){return{id:Number(s.id),target_path:getTargetPath(s)}});
+    toast("正在预览...");
     var r=await af("./organize/preview",{method:"POST",body:JSON.stringify({items:items})});
     var d=await r.json();
     if(d.error){toast("预览失败: "+d.error);return}
     S._orgPreview=d.changes||[];
     var ok=S._orgPreview.filter(function(c){return c.status==="ok"}).length;
     var conflict=S._orgPreview.filter(function(c){return c.status==="conflict"}).length;
-    toast("预览完成: "+ok+" 可执行, "+conflict+" 冲突");
+    var skip=S._orgPreview.filter(function(c){return c.status==="skip"}).length;
+    toast("预览完成: "+ok+" 可执行, "+conflict+" 冲突"+(skip?", "+skip+" 跳过":""));
     loadOrgSongsWithPreview();
   }catch(e){toast("预览失败: "+e.message)}
-  S._orgBusy=false;
+  finally{S._orgBusy=false}
 }
 function loadOrgSongsWithPreview(){
   var lst=E("orgList");if(!lst)return;
@@ -999,41 +1002,30 @@ function loadOrgSongsWithPreview(){
     var status="pending";var change=null;
     if(S._orgPreview){
       change=S._orgPreview.find(function(c){return Number(c.id)===sid});
-      if(change){
-        if(change.status==="conflict")status="conflict";
-        else if(change.status==="ok")status="ok";
-      }
+      if(change)status=change.status||"pending";
     }
-    var statusHtml=status==="conflict"?'<span class="org-status conflict">冲突</span>':status==="ok"?'<span class="org-status ok">待执行</span>':isSame?'':'<span class="org-status ok">待整理</span>';
-    var newPathHtml=status==="conflict"?'<div class="org-new conflict">⚠ '+esc(change?change.new_path:"")+' 已存在</div>':!isSame?'<div class="org-new">→ '+esc(target)+'</div>':'';
+    var statusHtml=status==="conflict"?'<span class="org-status conflict">冲突</span>':status==="skip"?'<span class="org-status pending">跳过(CUE)</span>':status==="error"?'<span class="org-status conflict">错误</span>':status==="ok"?'<span class="org-status ok">待执行</span>':isSame?'':'<span class="org-status ok">待整理</span>';
+    var newPathHtml=status==="conflict"?'<div class="org-new conflict">⚠ '+esc(change&&change.new_path||"")+' 已存在/撞名</div>':status==="error"?'<div class="org-new conflict">⚠ '+esc(change&&change.error||"错误")+'</div>':!isSame?'<div class="org-new">→ '+esc(target)+'</div>':'';
     return'<div class="song-card'+(S._orgSel.has(sid)?' sel':'')+'" data-id="'+sid+'" onclick="toggleOrgSel(this,'+sid+')"><div class="cv-zone"><div class="cover">'+coverHtml+'</div><div class="meta"><div class="t"><span class="name">'+esc(s.title||"?")+'</span> '+statusHtml+'</div><div class="u">'+esc(s.artist||"?")+(s.album?" · "+esc(s.album):"")+'</div><div class="org-path">'+esc(s.file_path||"")+'</div>'+newPathHtml+'</div></div></div>';
   }).join("");
   updOrgCnt();
 }
 async function orgExecute(){
   if(S._orgBusy)return;S._orgBusy=true;
-  if(!S._orgPreview||!S._orgPreview.length){toast("请先预览");S._orgBusy=false;return}
-  var items=S._orgPreview.filter(function(c){return c.status==="ok"}).map(function(c){return{id:c.id,target_path:c.new_path,old_path:c.old_path}});
-  if(!items.length){toast("没有可执行的变更");return}
-  toast("正在执行...");
   try{
+    if(!S._orgPreview||!S._orgPreview.length){toast("请先预览");return}
+    var items=S._orgPreview.filter(function(c){return c.status==="ok"}).map(function(c){return{id:c.id,target_path:c.new_path}});
+    if(!items.length){toast("没有可执行的变更");return}
+    toast("正在执行...");
     var r=await af("./organize/execute",{method:"POST",body:JSON.stringify({items:items})});
     var d=await r.json();
     if(d.error){toast("执行失败: "+d.error);return}
-    try{
-      var raw=await songloft.storage.get("org_history");
-      var history=[];
-      if(Array.isArray(raw))history=raw;
-      else if(typeof raw==="string"){try{history=JSON.parse(raw)}catch(e){history=[]}}
-      history.push({items:items,time:new Date().toISOString()});
-      if(history.length>10)history=history.slice(-10);
-      await songloft.storage.set("org_history",history);
-    }catch(e){}
     toast("完成: 成功"+d.success+" 失败"+d.failed);
     S._orgPreview=null;
+    await loadSongs();
     loadOrgSongs();
   }catch(e){toast("执行失败: "+e.message)}
-  S._orgBusy=false;
+  finally{S._orgBusy=false}
 }
 function orgSelectAll(){
   var cards=document.querySelectorAll("#orgList .song-card");
@@ -1048,22 +1040,28 @@ function orgSelectAll(){
 async function orgUndo(){
   if(S._orgBusy)return;S._orgBusy=true;
   try{
-    var raw=await songloft.storage.get("org_history");
-    var history=Array.isArray(raw)?raw:(typeof raw==="string"?JSON.parse(raw):[]);
-    if(!history.length){toast("没有可撤销的操作");return}
+    var hr=await af("./storage/org-history");
+    var history=await hr.json();
+    if(!Array.isArray(history)||!history.length){toast("没有可撤销的操作");return}
     var last=history[history.length-1];
     if(!last||!last.items||!last.items.length){toast("没有可撤销的操作");return}
-    var items=last.items.map(function(item){return{id:item.id,target_path:item.old_path}});
+    // 撤销 = 把文件移回 old_path（历史由后端在执行成功时记录）
+    var items=last.items.map(function(item){return{id:item.id,target_path:item.old_path}}).filter(function(it){return it.target_path});
+    if(!items.length){toast("历史记录缺少原路径，无法撤销");return}
     toast("正在撤销...");
-    var r=await af("./organize/execute",{method:"POST",body:JSON.stringify({items:items})});
+    var r=await af("./organize/execute",{method:"POST",body:JSON.stringify({items:items,skip_history:true})});
     var d=await r.json();
     if(d.error){toast("撤销失败: "+d.error);return}
-    history.pop();
-    await songloft.storage.set("org_history",history);
+    // 弹掉已撤销的最后一条历史
+    var hr2=await af("./storage/org-history");
+    var h2=await hr2.json();
+    if(Array.isArray(h2)&&h2.length)h2.pop();
+    await af("./storage/org-history",{method:"POST",body:JSON.stringify(h2||[])});
     toast("撤销完成: 恢复"+d.success+" 首歌曲");
+    await loadSongs();
     loadOrgSongs();
   }catch(e){toast("撤销失败: "+e.message)}
-  S._orgBusy=false;
+  finally{S._orgBusy=false}
 }
 
 window.onload=async function(){_pluginTheme=localStorage.getItem('tag-plugin-theme')||'light';applyPluginTheme();await loadCfg();chkSources();await loadSongs();await loadScraped();await loadFailed();resumeBatch();setupMobile();setTimeout(updateHealth,500)};
